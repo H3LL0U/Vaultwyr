@@ -1,13 +1,12 @@
 use serde::{Serialize, Deserialize};
 use core::panic;
-use sha2::{Sha256, Digest}; // Import the necessary parts of the sha2 crate
+use sha2::{Sha256, Digest};
 use std::ffi::OsStr;
 use std::io::{self, Write, Read};
 use std::fs::{OpenOptions,File,remove_file};
-use std::path::{self, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32};
 use bincode::{self};
-use tempfile::tempdir;
 #[derive(Serialize,Deserialize)]
 pub struct EncryptionOptions {
     //#[serde(skip_serializing)]
