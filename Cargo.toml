@@ -1,0 +1,9 @@
+[package]
+name = "FolderVault"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+file_utils = {path = "./src/libs/file_utils"}
+serde = { version = "1.0", features = ["derive"] }
+encryption_utils ={ path = "./src/libs/encryption_utils" }

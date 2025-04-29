@@ -1,0 +1,12 @@
+[package]
+name = "encryption_utils"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aes-gcm = "0.10.3"
+aes = "0.8.4"
+block-modes = "0.9.1"
+block-padding = "0.3.3"
+rand = "0.9.1"
+sha2 = "0.10" 
