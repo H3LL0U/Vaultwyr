@@ -1,3 +1,6 @@
-This is a tool that will help you encrypt and decrypt your files with your password
+# Vaultwyr
 
-Early development
+This is a simple application made with tauri that will help you encrypt your files using AES encryption with your own password
+It's built using tauri, typescript and rust.
+
+## The project is in very early development
