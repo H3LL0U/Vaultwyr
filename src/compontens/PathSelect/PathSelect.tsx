@@ -5,49 +5,90 @@ interface PathSelectProps {
   filename: string;
   setFileName: React.Dispatch<React.SetStateAction<string>>;
   submitFunc: (filename: string, setFileName: React.Dispatch<React.SetStateAction<string>>) => void;
+  mode?: number;
 }
 
-const PathSelect: React.FC<PathSelectProps> = ({ submitFunc, filename, setFileName }) => {
-
-  // Handle form submission
+const PathSelect: React.FC<PathSelectProps> = ({ submitFunc, filename, setFileName, mode = 0 }) => {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     submitFunc(filename, setFileName);
   };
 
-  // Open the file dialog to choose a file
+  const vaultExts = [".vaultwyr", ".fvaultwyr"];
+
   const handleFileSelect = async () => {
     try {
-      // Open a file selection dialog
+      const filters =
+        mode === 1
+          ? [{ name: "Vault Files", extensions: ["vaultwyr", "fvaultwyr"] }]
+          : [{ name: "Non-Vault Files", extensions: ["*"] }];
+
       const selected = await open({
-        multiple: false,  // Allow selecting only one file
-        filters: [{ name: "Text Files", extensions: ["txt"] }],  // Filter to only show .txt files
+        multiple: false,
+        directory: false,
+        filters,
       });
 
-      // If a file is selected, update the filename state
+      if (typeof selected === "string") {
+        const lower = selected.toLowerCase();
+        const isVault = vaultExts.some((ext) => lower.endsWith(ext));
+
+        if ((mode === 1 && !isVault) || (mode === 0 && isVault)) {
+          alert("This file type is not allowed in the current mode.");
+          return;
+        }
+
+        setFileName(selected);
+      }
+    } catch (error) {
+      console.error("Error selecting file", error);
+    }
+  };
+
+  const handleFolderSelect = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        directory: true,
+      });
+
       if (typeof selected === "string") {
         setFileName(selected);
       }
     } catch (error) {
-      console.error("Error opening file dialog", error);
+      console.error("Error selecting folder", error);
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileName(e.target.value);
   };
 
   return (
     <form className="row" onSubmit={onSubmit}>
-      {/* Button to trigger file selection */}
       <button type="button" onClick={handleFileSelect}>
-        Choose File
+        📄
       </button>
 
-      {/* Display the selected file or a default message if no file is selected */}
-      <span style={{ marginLeft: "1rem", maxWidth: "300px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {filename || "No file selected"}
-      </span>
+      <button type="button" onClick={handleFolderSelect} style={{ marginLeft: "0.5rem" }}>
+        📁
+      </button>
 
-      {/* Submit button to trigger the submit function */}
+      <input
+        style={{
+          marginLeft: "1rem",
+          maxWidth: "300px",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+        placeholder="path/to/file-or-folder"
+        value={filename}
+        onChange={handleChange}
+      />
+
       <button type="submit" style={{ marginLeft: "1rem" }}>
-        Greet
+        Confirm
       </button>
     </form>
   );

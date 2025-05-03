@@ -22,6 +22,7 @@
 }
 
 .container {
+  align-items: center;
   margin: 0;
   padding-top: 10vh;
   display: flex;
@@ -58,6 +59,7 @@ a:hover {
 
 h1 {
   text-align: center;
+
 }
 
 input,

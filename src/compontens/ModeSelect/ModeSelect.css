@@ -1,0 +1,93 @@
+.mode-select {
+    display: flex;
+    align-items: center;
+    width: 300px;
+    height: 100px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .mode-container {
+    position: relative;
+    width: 200px;
+    height: 100px;
+    overflow: hidden;
+  }
+  
+  .mode-item {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+    opacity: 0;
+  }
+  
+  .enter-right {
+    transform: translateX(100%);
+    opacity: 1;
+    animation: slideInFromRight 0.4s forwards;
+  }
+  
+  .exit-right {
+    transform: translateX(0%);
+    animation: slideOutToLeft 0.4s forwards;
+  }
+  
+  .enter-left {
+    transform: translateX(-100%);
+    opacity: 1;
+    animation: slideInFromLeft 0.4s forwards;
+  }
+  
+  .exit-left {
+    transform: translateX(0%);
+    animation: slideOutToRight 0.4s forwards;
+  }
+  
+  @keyframes slideInFromRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0.3;
+    }
+    to {
+      transform: translateX(0%);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideOutToLeft {
+    from {
+      transform: translateX(0%);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes slideInFromLeft {
+    from {
+      transform: translateX(-100%);
+      opacity: 0.3;
+    }
+    to {
+      transform: translateX(0%);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideOutToRight {
+    from {
+      transform: translateX(0%);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }

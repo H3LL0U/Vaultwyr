@@ -59,7 +59,7 @@ impl EncryptionOptions{
             panic!("No file extension present");
         }
         self.file_hash = calculate_file_hash(&self.original_path)?;
-        converted_path.set_extension("filelock");
+        converted_path.set_extension("vaultwyr");
         self.new_path = converted_path;
         Ok(())
     }
@@ -107,7 +107,7 @@ impl EncryptionOptions{
             return Err(io::Error::new(io::ErrorKind::Other, "File already Encrypted"))
         }
         
-        let extension: &OsStr = OsStr::new("filelock");
+        let extension: &OsStr = OsStr::new("vaultwyr");
 
         if self.new_path.extension().unwrap_or_default() != extension  {
             return Err(io::Error::new(io::ErrorKind::Other, "new path extension was not set"))
@@ -138,7 +138,7 @@ impl EncryptionOptions{
             return Err(io::Error::new(io::ErrorKind::Other, "File already Decrypted"))
         }
         
-        let extension: &OsStr = OsStr::new("filelock");
+        let extension: &OsStr = OsStr::new("vaultwyr");
 
         if self.new_path.extension().unwrap_or_default() != extension  {
             return Err(io::Error::new(io::ErrorKind::Other, "new path extension was not set"))
@@ -205,7 +205,7 @@ mod tests {
     fn test_encryption_options() -> Result<(), Box<dyn std::error::Error>> {
         let dir = PathBuf::from("./temp/"); 
         let test_file_path = &dir.as_path().join("hello.txt");
-        let test_file_new_path = &dir.as_path().join("hello.filelock");
+        let test_file_new_path = &dir.as_path().join("hello.vaultwyr");
         let file_content = "hii";
         let test_pswd = "hello";
     
