@@ -12,19 +12,19 @@ use std::fs::{remove_file, DirEntry, File, OpenOptions, ReadDir};
 use std::path::{self, Path, PathBuf};
 use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32};
 use bincode::{self, Error};
-use crate::Parser::EncryptedFileReader;
+use crate::Parser;
 use crate::calculate_file_hash;
 use crate::CryptoFiles::Parser::*;
 use ParserUtils::*;
 use std::io::BufRead;
 
-use super::Parser;
+use super::Parser::*;
 
 
 
 
 
-pub struct FileChunkIterator<R: Read> {
+ /*pub struct FileChunkIterator<R: Read> {
     reader: BufReader<R> ,
     chunk_size: usize
     
@@ -55,135 +55,11 @@ impl<R: Read> Iterator for FileChunkIterator<R> {
         }
     }
 }
-
+*/
 
 
 //files
 
-pub enum FileType {
-    FromEncryptedFolder(EncryptedFileHeaderIterator), //if it is from an encrypted folder you need to get the file based from the index of the file
-    FromRegularFolder(ReadDir) // if it is a regular folder you can get the files inside of the folder based on the path
-    
-}
-
-pub struct FolderFileIter{
-    pub file_type: FileType,
-	pub folder_path: PathBuf,
-	pub reader: Option<BufReader<File>>
-}
-
-impl FolderFileIter {
-    fn from_folder(path: PathBuf) -> Option<Self> {
-        
-        if path.extension().and_then(|s| s.to_str()) == Some("fvaultwyr") {
-            None //not supported
-        } else if path.is_dir() {
-            // Handle the Result from read_dir()
-            match path.read_dir() {
-                Ok(read_dir) => Some(FolderFileIter {
-                    file_type: FileType::FromRegularFolder(read_dir),
-                    folder_path: path,
-                    reader : None
-                }),
-                Err(_) => None, // If read_dir fails
-            }
-        } else {
-            None 
-        }
-    }
-
-}
-
-
-impl Iterator for FolderFileIter {
-    type Item = io::Result<FolderFile>;
-    
-    fn next(&mut self) -> Option<Self::Item> {
-        match &mut self.file_type {
-            FileType::FromRegularFolder(path_reader) => {
-                match path_reader.next() {
-                    Some(Ok(entry)) => {
-                        match FolderFile::from_path(entry.path(), 2048) {
-                            Ok(folder_file) => Some(Ok(folder_file)),
-                            Err(e) => Some(Err(e)),
-                        }
-                    }
-                    Some(Err(e)) => Some(Err(e)), // Propagate the error
-                    None => None,
-                }
-            }
-
-            FileType::FromEncryptedFolder(headers) => {
-                
-
-                for header in headers.into_iter() {
-                    match header {
-                        Ok(index) => {
-                            // Seek to the start of the file header
-                            dbg!(index);
-                            if let Err(e) = headers.reader.seek(io::SeekFrom::Start(index)) {
-                                return Some(Err(io::Error::new(e.kind(), e.to_string())));
-                            }
-
-                            let mut header_length: Vec<u8> = vec![];
-                            
-                            if let Err(e) = headers.reader.read_until(b' ', &mut header_length) {
-                                return Some(Err(e));
-                            }
-                            
-                            let header_length = match ParserUtils::vec_to_usize(header_length) {
-                                Ok(len) => len,
-                                Err(e) => return Some(Err(e)),
-                            };
-                            
-
-                            let mut buffer = vec![0u8; header_length];
-                            if let Err(e) = headers.reader.read_exact(&mut buffer) {
-                                return Some(Err(e));
-                            }
-
-                            let binding = match vec_to_string(buffer) {
-                                Ok(s) => s,
-                                Err(e) => return Some(Err(e)),
-                            };
-
-                            let buffer_parts: Vec<&str> = binding.split('\n').collect();
-                            if buffer_parts.len() != 2 {
-                                return Some(Err(io::Error::new(
-                                    io::ErrorKind::InvalidData,
-                                    "Header format is incorrect",
-                                )));
-                            }
-
-                            let original_path = PathBuf::from(buffer_parts[0]);
-                            let file_hash = buffer_parts[1].to_string();
-
-                            let position = match headers.reader.stream_position() {
-                                Ok(i) => i,
-                                Err(e) => return Some(Err(e)),
-                            };
-                            
-                            let parser = match FileChunkParser::new(self.folder_path.clone(), position) {
-                                Ok(parser) => parser,
-                                Err(e) => return Some(Err(e)),
-                            };
-                            return Some(Ok(FolderFile {
-                                original_path,
-                                file_hash,
-                                validation: vec![],
-                                
-                                data: DataSource::Parser(parser)
-                            }));
-                        }
-                        Err(e) => return Some(Err(e)),
-                    }
-                }
-
-                None // Exhausted all headers
-            }
-        }
-    }
-}
 
 
 
@@ -191,36 +67,25 @@ impl Iterator for FolderFileIter {
 
 
 
-pub enum DataSource{
-    Iterator(FileChunkIterator<File>),
-    Parser(FileChunkParser)
-}
 pub struct FolderFile{
     
     pub original_path: PathBuf,
     
     
-    pub validation: Vec<u8>,
+    
     pub file_hash: String,
-    pub data: DataSource,
+    pub data: FileChunkIterator,
 }
 
 
 
 
 impl FolderFile{
-    pub fn from_path(original_path:PathBuf, chunk_size:usize) -> io::Result<FolderFile>{
-        let file_hash = calculate_file_hash(&original_path)?;
-        
-        Ok(FolderFile{
-            data : DataSource::Iterator(FileChunkIterator::new(File::open(&original_path)?, chunk_size)),
-            original_path : original_path,
-            validation : vec![0u8; 32],
-            file_hash : file_hash, 
-            
-            
-        })
+
+    pub fn new(original_path:PathBuf,file_hash:String, data:FileChunkIterator) -> Self{
+        FolderFile { original_path, file_hash , data, }
     }
+
 
 
     fn create_original_file(&self) -> io::Result<File>{
@@ -235,50 +100,15 @@ impl FolderFile{
 
 
     pub fn try_restore_with_password(&mut self, password:&str) -> io::Result<()>{
-
+        let key = password_to_key32(password)?;
         let mut  original_file = self.create_original_file()?;
+        for chunk in &mut self.data{
+            let decrypted_chunk = aes_decrypt_with_key(key, &chunk).map_err(|_| io::Error::new(io::ErrorKind::Other, "error decrypting chunk"))?;
+            original_file.write_all(&decrypted_chunk);
+        }
+        Ok(())
 
-        
-
-            match &mut self.data {
-                
-                DataSource::Iterator(_) => {
-
-                    return Err(io::Error::new(io::ErrorKind::Unsupported, "DataSource Iterator not supported, the file should be decrypted"))
-
-
-                },
-                DataSource::Parser(p) =>{
-                    let key = password_to_key32(password).map_err(|_| io::Error::new(io::ErrorKind::Other,"error converting password to key"))?;
-                    for chunk in p{
-
-                        match chunk {
-                            Ok(chunk) => {
-                                
-                                //decrypt using aes256 into file
-                                
-                                let decrypted_chunk = aes_decrypt_with_key(key, &chunk).map_err(|_| io::Error::new(io::ErrorKind::Other, "Error decrypting chunk"))?;
-
-                                original_file.write_all(&decrypted_chunk)?;
-
-
-
-                            },
-                        Err(e) => { 
-                            return Err(io::Error::new(
-                                io::ErrorKind::Other,
-                                format!("Error retrieving chunk: {}", e),
-                            ));
-                            }
-                        }
-
-
-                    }
-
-                }
-            };
-             Ok(())
-
+            
         }
        
 
@@ -301,115 +131,46 @@ impl FolderFile{
     */
 
 
-pub struct Folder{
+pub struct VaultWyrFolder{
     pub new_path:PathBuf,
 	pub algo : String,
 	pub chunk_size: usize,
 
-	pub files: FolderFileIter
+	pub files: VaultwyrFileLinker
 }
 
 
 
 
-impl Folder{
-    pub fn from_path(path: PathBuf) -> Option<Self> {
-        let mut folder = Folder {
-            new_path:PathBuf::new(),
-            algo: "aes256".to_string(),
-            chunk_size: 2048,
-            
-            files: match FolderFileIter::from_folder(path) {
-                Some(folder) => folder,
-                None => return None,
-            },
+impl VaultWyrFolder{
+
+
+    pub fn new(new_path: PathBuf,algo: String,chunk_size:usize,files: VaultwyrFileLinker) -> Self{
+        VaultWyrFolder { new_path, algo , chunk_size, files}
+    }
+
+    
+
+
+fn decrypt_all_files(&mut self, password: &str) -> io::Result<()> {
+    for file in &mut self.files {
+        let vaultwyr_folder_file_reader = BufReader::new(OpenOptions::new().read(true).open(&self.new_path)?);
+
+        let mut header = match file.parse_file_header(vaultwyr_folder_file_reader) {
+            Some(h) => h,
+            None => panic!("Unexpected main header"),
         };
-        folder.new_path = folder.files.folder_path.clone();
-        folder.new_path.set_extension("fvaultwyr");
-        Some(folder)
+
+        header.try_restore_with_password(password)?;
     }
+    Ok(())
+}
+
+}
 
 
-    fn from_encrypted_path(vaultwyr_path:PathBuf) -> io::Result<Self>{
-        
-        EncryptedFileReader::new(vaultwyr_path)?.into_folder()
-
-
-    }
-    fn decrypt_all_files(&self){
-        
-    }
-    /* 
-    pub fn encrypt_files_into_file_with_password(mut self ,password:&str) -> io::Result<()>{
-        let mut  chunks = 0;
-        // Handling Result returned by `from_path`
-        self.new_path = self.files.folder_path.clone();
-        self.new_path.set_extension("fvaultwyr");
-
-        
-        if self.new_path.exists(){
-                return Err(io::Error::new(io::ErrorKind::AlreadyExists, "The file already exists"))
-            }
-        let mut  opened_file = OpenOptions::new().create_new(true).write(true).read(true).open(&self.new_path)?;
-
-
-        let key = password_to_key32(password)?;
-
-
-        
-        for file in self.files {
-            //todo specify that this is the begining of the file
-
-            for chunk in file.data{
-                match chunk{
-                    Ok(chunk) => {
-
-                        let encrypted_chunk = match aes_encrypt_with_key(key, &chunk) {
-                            Ok(encrypted) => {encrypted},
-                            Err(_) => { return Err(io::Error::new(io::ErrorKind::InvalidData, "Could not encrypt "))},
-                        };
-                        encrypted_chunk.len();
-                        
-                        opened_file.write_all(&encrypted_chunk)?;
-                        
-                        
-                        
-                    },
-                        Err(_) => {}
-                    }
-                }
-            }
-        Ok(())
-    }
-    
-
-
-
-    fn print_paths(&mut self) {
-        for file in &mut self.files{
-            println!("{}" ,file.original_path.to_str().unwrap())
-        }
-    }
-    */
-    pub fn algo(mut self,algo:&str) -> Self{
-        self.algo = algo.to_string();
-        self
-    }
-
-    pub fn chunk_size(mut self ,chunk_size:usize) -> Self{
-        self.chunk_size = chunk_size;
-        self
-    }
-
-    
-
-
-
-
-
-
-
-
+struct Folder{
+    path: PathBuf
 }
 
 
@@ -417,6 +178,25 @@ impl Folder{
 mod tests{
     use crate::CryptoFiles::CryptoFiles::{*};
     use std::{io::repeat, path::PathBuf, str::FromStr};
+
+
+    #[test]
+    fn test_parser() -> io::Result<()>{
+
+        let path = match PathBuf::from_str("./temp.fvaultwyr") {
+            Ok(p) => {p},
+            Err(_) => {panic!("error constructing path")},
+        };
+
+        
+        let reader = BufReader::new(File::open(&path)?);
+
+        let mut  folder= VaultWyrFileParser::new(VaultwyrFileLinker::from_vaultwyr_file(path)?, reader).to_folder();
+
+        folder.decrypt_all_files("hello")?;
+
+        Ok(())
+    }
     /* 
     #[test]
     fn test_folder() -> io::Result<()>{
@@ -450,6 +230,8 @@ mod tests{
     Ok(())
     }
     */
+
+    /* 
     #[test]
     fn test_writer() -> io::Result<()>{
 
@@ -495,5 +277,7 @@ mod tests{
 
     }
     Ok(())
+
 }
+    */
 }
