@@ -62,6 +62,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "alkahest"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3afb453d344e42ba592019bb80778e8c0a4976c4f4986e0dba6a0ae7d5a9616"
+
+[[package]]
 name = "alloc-no-stdlib"
 version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1073,6 +1079,7 @@ dependencies = [
 name = "file_utils"
 version = "0.1.0"
 dependencies = [
+ "alkahest",
  "bincode",
  "encryption_utils",
  "serde",

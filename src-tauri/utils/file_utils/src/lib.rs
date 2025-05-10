@@ -1,12 +1,20 @@
+mod CryptoFiles;
+
 use serde::{Serialize, Deserialize};
+use serde_json::value::Index;
 use core::panic;
+use std::u128;
 use sha2::{Sha256, Digest};
 use std::ffi::OsStr;
-use std::io::{self, Write, Read};
-use std::fs::{OpenOptions,File,remove_file};
-use std::path::{Path, PathBuf};
+use std::io::{self, Write, Read, BufReader};
+use std::fs::{remove_file, DirEntry, File, OpenOptions, ReadDir};
+use std::path::{self, Path, PathBuf};
 use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32};
-use bincode::{self};
+use bincode::{self, Error};
+
+use CryptoFiles::CryptoFiles::{*};
+
+use crate::CryptoFiles::{*};
 #[derive(Serialize,Deserialize)]
 pub struct EncryptionOptions {
     //#[serde(skip_serializing)]
@@ -190,15 +198,14 @@ pub fn calculate_file_hash<P: AsRef<Path>>(path: P) -> io::Result<String> {
 }
 
 
-
-
-
-
+//chunk iterator
 
 
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
 
     #[test]
@@ -239,4 +246,8 @@ mod tests {
     
         Ok(())
     }
+
+    
+
+    
 }
