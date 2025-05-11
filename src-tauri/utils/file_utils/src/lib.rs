@@ -1,20 +1,20 @@
-mod CryptoFiles;
-
+pub mod crypto_files;
 use serde::{Serialize, Deserialize};
-use serde_json::value::Index;
+
 use core::panic;
-use std::u128;
+
 use sha2::{Sha256, Digest};
 use std::ffi::OsStr;
-use std::io::{self, Write, Read, BufReader};
-use std::fs::{remove_file, DirEntry, File, OpenOptions, ReadDir};
-use std::path::{self, Path, PathBuf};
+use std::io::{self, Write, Read};
+use std::fs::{self ,remove_file, File, OpenOptions};
+use std::path::{ Path, PathBuf};
 use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32};
-use bincode::{self, Error};
+use bincode::{self};
 
-use CryptoFiles::CryptoFiles::{*};
+pub use crypto_files::crypto_files::{*};
 
-use crate::CryptoFiles::{*};
+
+pub use crate::crypto_files::{*};
 #[derive(Serialize,Deserialize)]
 pub struct EncryptionOptions {
     //#[serde(skip_serializing)]
@@ -31,6 +31,31 @@ pub struct EncryptionOptions {
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
+
+
+
+pub fn calculate_dir_size(path: &Path) -> io::Result<u64> {
+    let mut total_size = 0;
+
+    if path.is_dir() {
+        // Iterate through the directory
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            let entry_path = entry.path();
+
+            if entry_path.is_dir() {
+                // Recurse into subdirectories
+                total_size += calculate_dir_size(&entry_path)?;
+            } else {
+                // Add file size
+                total_size += entry.metadata()?.len();
+            }
+        }
+    }
+
+    Ok(total_size)
+}
+
 
 impl EncryptionOptions{
 

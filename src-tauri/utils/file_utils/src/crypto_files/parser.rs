@@ -1,19 +1,18 @@
-use core::{panic, str};
-use std::{error::Error, fmt::format, fs::{File, OpenOptions}, io::{BufRead, Write}, path::{Path, PathBuf}, str::FromStr, vec};
-use std::io::{self, BufWriter, BufReader, Seek, SeekFrom, Read};
-use encryption_utils::{aes_encrypt_with_key, password_to_key32};
-use serde_json::value::Index;
-use ParserUtils::{parse_content, vec_to_string, vec_to_usize};
-use crate::CryptoFiles::CryptoFiles::{FolderFile};
+use core::panic;
+use std::{ fs::File, path:: PathBuf, str::FromStr, };
+use std::io::{self, BufReader, Seek, SeekFrom };
 
-use super::CryptoFiles::{ VaultWyrFolder};
+use parser_utils::{parse_content, vec_to_string, };
+use crate::crypto_files::crypto_files::FolderFile;
 
+use super::crypto_files::VaultWyrFolder;
 
 
 
-pub mod ParserUtils{
-    use std::io::{self, BufWriter, BufReader, BufRead, Seek, SeekFrom, Read};
-    use std::{fs::File};
+
+pub mod parser_utils{
+    use std::io::{self,  BufReader, BufRead, Read};
+    use std::fs::File;
     pub fn vec_to_usize(vector:Vec<u8>) -> io::Result<usize>{
         
         let header_length = vec_to_string(vector)?;
@@ -57,7 +56,7 @@ pub fn vec_to_string(vector: Vec<u8>) -> io::Result<String> {
     }
     pub fn parse_content(mut reader: &mut BufReader<File>,) -> Vec<u8>{
             let length = parse_length(&mut reader);
-            dbg!(&length);
+            
             let mut content_buf = vec![0u8;length];
             reader.read_exact(&mut content_buf).unwrap();
             content_buf
@@ -68,7 +67,7 @@ pub fn vec_to_string(vector: Vec<u8>) -> io::Result<String> {
 
 
 #[derive(Debug)]
-struct FileHeader{
+pub struct FileHeader{
     header_index: u64,
     chunk_indexes: Vec<u64>
 }
@@ -87,10 +86,6 @@ impl FileHeader{
         self.chunk_indexes.push(index);
     }
 
-    pub fn parse_to_folder_file(vaultwyr_file: BufReader<File>){
-        //pointer location >h length original_path\nfile_hash\n
-        
-    }
 }
 
 pub enum HeaderType {
@@ -115,7 +110,7 @@ impl HeaderType{
             HeaderType::MainHeader(i) => {
                 reader.seek(SeekFrom::Start(*i)).expect("Failed to seek reader");
 
-                let content_str = match vec_to_string(ParserUtils::parse_content(&mut reader)) {
+                let content_str = match vec_to_string(parser_utils::parse_content(&mut reader)) {
                     Ok(s) => s,
                     Err(_) => panic!("Could not convert the main header's content to string"),
                 };
@@ -128,7 +123,7 @@ impl HeaderType{
                 if content.len() != 3 {
                     panic!("The main header contains more arguments than expected");
                 }
-                dbg!(&content);
+                
                 
                 return Some(content);
             }
@@ -151,8 +146,8 @@ impl HeaderType{
                     Ok(_) => {},
                     Err(_) => {panic!("error updating the pointer")},
                 };
-                let content = ParserUtils::parse_content(&mut reader);
-                dbg!(&content);
+                let content = parser_utils::parse_content(&mut reader);
+                
                 let content_str = match vec_to_string(content) {
                     Ok(s) => s,
                     Err(_) => panic!("Could not convert the file header's content to string"),
@@ -201,9 +196,9 @@ impl VaultwyrFileLinker{
         Err(_) => {panic!("Error getting the position of the pointer")},
         };
                 //pointer at >h header_length ...
-        let header_length = ParserUtils::parse_length(&mut self.vaultwyr_file_reader);
+        let header_length = parser_utils::parse_length(&mut self.vaultwyr_file_reader);
         match self.vaultwyr_file_reader.seek(SeekFrom::Current(header_length as i64)) {
-            Ok(index) => {},
+            Ok(_) => {},
             Err(_) => {panic!("Could not advance to the next header")},
         };
         header_start_index
@@ -220,7 +215,7 @@ impl Iterator for VaultwyrFileLinker{
         let delimeters = [b'm', b'h', b'c'];
 
 
-        let header_representation = match ParserUtils::read_until_any(&mut self.vaultwyr_file_reader, &delimeters) {
+        let header_representation = match parser_utils::read_until_any(&mut self.vaultwyr_file_reader, &delimeters) {
             Ok(h) => {h},
             Err(e) if e.kind() == io::ErrorKind::UnexpectedEof && self.cur_fileheader.is_none() => {
             return None;
@@ -236,12 +231,12 @@ impl Iterator for VaultwyrFileLinker{
             _ => panic!("Error when reading untill some delimter")
         };
         
-        dbg!(&header_representation);
+        
             match header_representation {
 
                 //finding the main header
                 b'm' => {
-                    dbg!("found main header");
+                    
                     return Some(HeaderType::MainHeader(self.seek_header_end()));
                 }
                 b'h' => {
@@ -260,14 +255,14 @@ impl Iterator for VaultwyrFileLinker{
                             return Some(HeaderType::FileHeader(f));
                         }
                         None => {
-                            dbg!("continue");
+                        
                             continue;
                         }
                     }
                 }
                 b'c' => {
                     let cur_header_pos = self.seek_header_end();
-                    dbg!(&cur_header_pos);
+                    
                     match &mut self.cur_fileheader {
                         Some(fileheader) => {
                             fileheader.add_chunk_index(cur_header_pos);
@@ -312,7 +307,7 @@ impl Iterator for FileChunkIterator{
             None => {return  None;},
         };
         self.reader.seek(SeekFrom::Start(*chunk_index)).unwrap();
-        dbg!(chunk_index);
+        
         self.chunk_indexes.pop();
         Some(parse_content(&mut self.reader))
 
