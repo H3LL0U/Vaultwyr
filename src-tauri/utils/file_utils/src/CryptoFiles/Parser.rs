@@ -23,33 +23,31 @@ pub mod ParserUtils{
         Ok(header_length)
     }
 
-    pub fn vec_to_string(vector:Vec<u8>) -> io::Result<String>{
-
-        
-
-        Ok(String::from_utf8(vector)
-        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Could not convert the vector to string"))?.trim().to_string())
-    }
+pub fn vec_to_string(vector: Vec<u8>) -> io::Result<String> {
+    String::from_utf8(vector)
+        .map(|s| s.trim().to_string()) // Trim and convert to String
+        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Could not convert the vector to string"))
+}
     pub fn read_until_any(reader: &mut BufReader<File>, delimiters: &[u8]) -> io::Result<u8> {
         
         let mut byte = [0; 1];
 
         while reader.read(&mut byte)? > 0 {
             if delimiters.contains(&byte[0]) {
-                break;
+                return Ok(byte[0])
             }
             
         }
-
-        Ok(byte[0])
+        Err(io::Error::new(io::ErrorKind::UnexpectedEof, "end of file"))
+        
     }
 
     pub fn parse_length(reader:&mut BufReader<File>) -> usize{
             let mut tmp_buf = Vec::<u8>::new();
-            reader.read_until(b' ', &mut tmp_buf);
+            reader.read_until(b' ', &mut tmp_buf).unwrap();
             tmp_buf.clear();
-            reader.read_until(b' ', &mut tmp_buf);
-            dbg!(&tmp_buf);
+            reader.read_until(b' ', &mut tmp_buf).unwrap();
+            
             let length = match vec_to_usize(tmp_buf) {
                 Ok(l) => {l},
                 Err(_) => { panic!("error parsing the length")},
@@ -59,8 +57,9 @@ pub mod ParserUtils{
     }
     pub fn parse_content(mut reader: &mut BufReader<File>,) -> Vec<u8>{
             let length = parse_length(&mut reader);
+            dbg!(&length);
             let mut content_buf = vec![0u8;length];
-            reader.read_exact(&mut content_buf);
+            reader.read_exact(&mut content_buf).unwrap();
             content_buf
 
     }
@@ -68,7 +67,7 @@ pub mod ParserUtils{
 }
 
 
-
+#[derive(Debug)]
 struct FileHeader{
     header_index: u64,
     chunk_indexes: Vec<u64>
@@ -129,7 +128,8 @@ impl HeaderType{
                 if content.len() != 3 {
                     panic!("The main header contains more arguments than expected");
                 }
-
+                dbg!(&content);
+                
                 return Some(content);
             }
         
@@ -143,13 +143,17 @@ impl HeaderType{
 
 
     pub fn parse_file_header(self, mut reader:BufReader<File>,) -> Option<FolderFile>{
+        
         match self {
             HeaderType::FileHeader(fileheader) => {
-
-                reader.seek(SeekFrom::Start(fileheader.header_index));
-                let content = ParserUtils::parse_content(&mut reader);
                 
-                let content_str = match vec_to_string(ParserUtils::parse_content(&mut reader)) {
+                match reader.seek(SeekFrom::Start(fileheader.header_index)) {
+                    Ok(_) => {},
+                    Err(_) => {panic!("error updating the pointer")},
+                };
+                let content = ParserUtils::parse_content(&mut reader);
+                dbg!(&content);
+                let content_str = match vec_to_string(content) {
                     Ok(s) => s,
                     Err(_) => panic!("Could not convert the file header's content to string"),
                 };
@@ -170,6 +174,7 @@ impl HeaderType{
             ))
 
             },
+            
             _ => None
         }
        }
@@ -211,26 +216,36 @@ impl Iterator for VaultwyrFileLinker{
     type Item = HeaderType;
 
     fn next(&mut self) -> Option<Self::Item> {
-        
+        loop{
         let delimeters = [b'm', b'h', b'c'];
 
 
         let header_representation = match ParserUtils::read_until_any(&mut self.vaultwyr_file_reader, &delimeters) {
             Ok(h) => {h},
-            Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
+            Err(e) if e.kind() == io::ErrorKind::UnexpectedEof && self.cur_fileheader.is_none() => {
             return None;
             
+            },
+
+            Err(e) if e.kind() == io::ErrorKind::UnexpectedEof =>{
+                let old_fileheader = self.cur_fileheader.take();
+                
+                return Some(HeaderType::FileHeader(old_fileheader.unwrap()));
             }
+
             _ => panic!("Error when reading untill some delimter")
         };
-        loop{
+        
+        dbg!(&header_representation);
             match header_representation {
 
                 //finding the main header
                 b'm' => {
-                    HeaderType::MainHeader(self.seek_header_end());
+                    dbg!("found main header");
+                    return Some(HeaderType::MainHeader(self.seek_header_end()));
                 }
                 b'h' => {
+                    
                     // Compute the new FileHeader without borrowing `self` twice
                     let new_fileheader = FileHeader::new(self.seek_header_end());
 
@@ -245,12 +260,14 @@ impl Iterator for VaultwyrFileLinker{
                             return Some(HeaderType::FileHeader(f));
                         }
                         None => {
-                            return None;
+                            dbg!("continue");
+                            continue;
                         }
                     }
                 }
                 b'c' => {
                     let cur_header_pos = self.seek_header_end();
+                    dbg!(&cur_header_pos);
                     match &mut self.cur_fileheader {
                         Some(fileheader) => {
                             fileheader.add_chunk_index(cur_header_pos);
@@ -269,7 +286,6 @@ impl Iterator for VaultwyrFileLinker{
 
 
 
-        None
 
 
     }
@@ -295,7 +311,8 @@ impl Iterator for FileChunkIterator{
             Some(i) => {i},
             None => {return  None;},
         };
-        self.reader.seek(SeekFrom::Start(*chunk_index));
+        self.reader.seek(SeekFrom::Start(*chunk_index)).unwrap();
+        dbg!(chunk_index);
         self.chunk_indexes.pop();
         Some(parse_content(&mut self.reader))
 
@@ -330,6 +347,8 @@ impl VaultWyrFileParser{
             panic!("Expected exactly 3 arguments: new_path, algo, chunk_size");
         };
 
+        
+
         VaultWyrFolder { 
             new_path: PathBuf::from_str(new_path).expect("Error converting the path from string"),
             algo: algo.clone(),
@@ -339,134 +358,11 @@ impl VaultWyrFileParser{
     }
 }
 
-struct EncryptedFileReader{
-    linker:VaultwyrFileLinker
-    
-}
-
-
-
-
-/* 
-pub struct EncryptedFileWriter{
-    folder:Folder,
-    vaultwyr_file: File
-
-}
 
 
 
 
 
 
-
-
-impl EncryptedFileWriter{
-
-    fn write_header(&mut self) -> io::Result<()>{
-
-        let new_path = match self.folder.new_path.to_str() {
-            Some(s) => {s},
-            None => {return Err(io::Error::new(io::ErrorKind::InvalidData, "Could not convert path to str"))},
-        };
-        let mut buffer = format!("{}\n{}\n{}", new_path, self.folder.algo,self.folder.chunk_size);
-
-        buffer = format!("m {} {}", buffer.len(), buffer);
-        
-        self.vaultwyr_file.write_all(&buffer.as_bytes())?;
-        Ok(())
-
-    }
-
-    fn write_files(&mut self, password: &str) -> io::Result<()> {
-        let key = password_to_key32(password)?;
-    
-        for file_result in &mut self.folder.files{
-
-    
-            // Creating the file header
-            let original_path = match file.original_path.to_str() {
-                Some(s) => s,
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "Could not convert path to str",
-                    ));
-                }
-            };
-    
-            let mut header = format!("{}\n{}", original_path, &file.file_hash);
-            header = format!("h {} {}", header.len(), header);
-            self.vaultwyr_file.write_all(header.as_bytes())?;
-    
-            // Write out the chunks
-            if let DataSource::Iterator(ref mut data) = file.data {
-                for chunk_result in data {
-                    let mut chunk = match chunk_result {
-                        Ok(chunk) => chunk,
-                        Err(_) => continue, // Skip the chunk on error
-                    };
-    
-                    match self.folder.algo.as_str() {
-                        "aes256" => {
-                            chunk = match aes_encrypt_with_key(key, &chunk) {
-                                Ok(encrypted_chunk) => encrypted_chunk,
-                                Err(_) => {
-                                    return Err(io::Error::new(
-                                        io::ErrorKind::InvalidData,
-                                        "Could not encrypt chunk",
-                                    ));
-                                }
-                            };
-    
-                            // Write in the format: "c <chunk_len> <chunk_data>"
-                            self.vaultwyr_file.write_all(b"c ")?;
-                            self.vaultwyr_file.write_all(chunk.len().to_string().as_bytes())?;
-                            self.vaultwyr_file.write_all(b" ")?;
-                            self.vaultwyr_file.write_all(&chunk)?;
-                        }
-                        _ => {
-                            return Err(io::Error::new(
-                                io::ErrorKind::InvalidData,
-                                "No support for such algorithm",
-                            ));
-                        }
-                    }
-                }
-            }
-        }
-    
-        Ok(())
-    }
-        
-
-        pub fn encrypt_to_file(&mut self, password:&str) -> io::Result<()>{
-
-            self.write_header()?;
-            self.write_files(password)?;
-            Ok(())
-        }
-        pub fn new(folder:Folder) -> Option<Self>{
-            //check if the file exists first
-            if folder
-            .new_path
-            .extension()
-            .and_then(|ext| ext.to_str())
-            != Some("fvaultwyr") || folder.new_path.exists()
-        {
-            return None;
-        }
-            let vaultwyr_file = match OpenOptions::new().write(true).create_new(true).open(&folder.new_path) {
-                Ok(f) => {f},
-                Err(_) => {return None},
-            };
-    
-            Some(EncryptedFileWriter { folder: folder, vaultwyr_file })
-        }
-    
-
-    }
-
-*/
 
 
