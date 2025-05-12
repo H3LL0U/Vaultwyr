@@ -2,7 +2,7 @@
 mod tests{
     
     use std::{fs::File, io::{ BufReader, Read}, path::PathBuf, str::FromStr};
-    use file_utils::parser::*;
+    use file_utils::Parser::*;
     use file_utils::crypto_files::crypto_files::{*};
     use std::fs::{self};
 

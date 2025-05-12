@@ -1,3 +1,4 @@
+
 use core::panic;
 use std::{ fs::File, path:: PathBuf, str::FromStr, };
 use std::io::{self, BufReader, Seek, SeekFrom };
@@ -62,6 +63,24 @@ pub fn vec_to_string(vector: Vec<u8>) -> io::Result<String> {
             content_buf
 
     }
+
+    pub fn split_into_chunks(data: Vec<u8>, delimiter: u8, num_chunks: usize) -> Vec<Vec<u8>> {
+        let mut splits = data.split(|&byte| byte == delimiter);
+        let mut chunks = Vec::with_capacity(num_chunks);
+
+        for _ in 0..num_chunks - 1 {
+            if let Some(chunk) = splits.next() {
+                chunks.push(chunk.to_vec());
+            }
+        }
+
+        // Collect remaining data as the last chunk
+        let remaining: Vec<u8> = splits.flatten().copied().collect();
+        chunks.push(remaining);
+
+        chunks
+    }
+
     
 }
 
@@ -102,7 +121,7 @@ pub enum HeaderType {
 
 impl HeaderType{
     
-    pub fn parse_main_header(&self, mut reader:BufReader<File>) -> Option<Vec<String>>{
+    pub fn parse_main_header(&self, mut reader:BufReader<File>) -> Option<Vec<Vec<u8>>>{
 
         
         //returns arguments used for creating a folder 
@@ -110,15 +129,9 @@ impl HeaderType{
             HeaderType::MainHeader(i) => {
                 reader.seek(SeekFrom::Start(*i)).expect("Failed to seek reader");
 
-                let content_str = match vec_to_string(parser_utils::parse_content(&mut reader)) {
-                    Ok(s) => s,
-                    Err(_) => panic!("Could not convert the main header's content to string"),
-                };
-
-                let content: Vec<String> = content_str
-                    .split('\n')
-                    .map(|s| s.to_string())
-                    .collect();
+                let content =  parser_utils::split_into_chunks(parser_utils::parse_content(&mut reader),
+                b'\n',
+                3);
 
                 if content.len() != 3 {
                     panic!("The main header contains more arguments than expected");
@@ -334,20 +347,20 @@ impl VaultWyrFileParser{
             Some(header) => {header},
             None => {panic!("Could not find the main header")},
         };
-        let args = match header_type.parse_main_header(self.reader) {
+        let mut args = match header_type.parse_main_header(self.reader) {
             Some(args) => {args},
             None => {panic!("The first header is not the main header")},
         };
-        let [new_path, algo, chunk_size] = &args[..3] else {
-            panic!("Expected exactly 3 arguments: new_path, algo, chunk_size");
-        };
+
 
         
-
+        //goes in reverse order since args are stored like this : new_path , algo, validation <(sequential pop starts from here)
         VaultWyrFolder { 
-            new_path: PathBuf::from_str(new_path).expect("Error converting the path from string"),
-            algo: algo.clone(),
-            chunk_size: chunk_size.parse().expect("Could not convert chunk_size into int"),
+            validation: args.pop().expect("could not get the validation string from the main header"),
+            algo: parser_utils::vec_to_string(args.pop().expect("could not get the algo from the main header")).expect("could not convert the algorythm type to string"),
+            new_path: PathBuf::from_str(parser_utils::vec_to_string(args.pop().expect("could not get the new path from the main header")).expect("Could not convert the new path to string").as_str()).expect("Error converting the path from string").with_extension("fvaultwyr"),
+            
+            
             files: self.linker,
         }
     }

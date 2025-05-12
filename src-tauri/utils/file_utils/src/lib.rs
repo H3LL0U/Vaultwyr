@@ -150,12 +150,12 @@ impl EncryptionOptions{
         original_file.read_to_string(&mut original_file_contents)?;
         let key = password_to_key32(password)?;
         
-        self.validation = match aes_encrypt_with_key(key, &self.validation){
+        self.validation = match aes_encrypt_with_key(&key, &self.validation){
             Ok(n) => n,
             Err(_) => return Err(io::Error::new(io::ErrorKind::Other, "Could not encrypt file contents"))
         };
         //encrypt main data
-        self.data = match aes_encrypt_with_key(key, &original_file_contents.as_bytes()){
+        self.data = match aes_encrypt_with_key(&key, &original_file_contents.as_bytes()){
             Ok(n) => n,
             Err(_) => return Err(io::Error::new(io::ErrorKind::Other, "Could not encrypt file contents")),
             
@@ -180,12 +180,12 @@ impl EncryptionOptions{
         let key = password_to_key32(password)?;
         
         //decrypt validation vector
-        self.validation = match aes_decrypt_with_key(key, &self.validation){
+        self.validation = match aes_decrypt_with_key(&key, &self.validation){
             Ok(n) => n,
             Err(_) => return Err(io::Error::new(io::ErrorKind::Other, "Could not encrypt validation contents"))
         };
         //decrypt main data
-        self.data = match aes_decrypt_with_key(key, &self.data){
+        self.data = match aes_decrypt_with_key(&key, &self.data){
             Ok(n) => n,
             Err(_) => return Err(io::Error::new(io::ErrorKind::Other, "Could not encrypt file contents")),
             

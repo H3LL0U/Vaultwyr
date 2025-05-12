@@ -10,9 +10,9 @@ use std::fs;
 use std::io::{self, BufReader, Read, Write};
 use std::fs::{remove_file, File, OpenOptions};
 use std::path:: PathBuf;
-use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32};
+use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32, validate_key32};
 use crate::calculate_file_hash;
-use crate::crypto_files::parser::*;
+use crate::crypto_files::Parser::*;
 use crate::file_traversal::RecursiveDirIter;
 use crate::calculate_dir_size;
 
@@ -62,7 +62,7 @@ fn create_original_file(&self) -> io::Result<File> {
         let mut  original_file = self.create_original_file()?;
         for chunk in &mut self.data{
             
-            let decrypted_chunk = aes_decrypt_with_key(key, &chunk).map_err(|_| io::Error::new(io::ErrorKind::Other, "error decrypting chunk"))?;
+            let decrypted_chunk = aes_decrypt_with_key(&key, &chunk).map_err(|_| io::Error::new(io::ErrorKind::Other, "error decrypting chunk"))?;
             original_file.write_all(&decrypted_chunk)?;
         }
         Ok(())
@@ -79,7 +79,7 @@ fn create_original_file(&self) -> io::Result<File> {
 pub struct VaultWyrFolder{
     pub new_path:PathBuf,
 	pub algo : String,
-	pub chunk_size: usize,
+	pub validation: Vec<u8>,
 
 	pub files: VaultwyrFileLinker
 }
@@ -90,14 +90,27 @@ pub struct VaultWyrFolder{
 impl VaultWyrFolder{
 
 
-    pub fn new(new_path: PathBuf,algo: String,chunk_size:usize,files: VaultwyrFileLinker) -> Self{
-        VaultWyrFolder { new_path, algo , chunk_size, files}
+    pub fn new(new_path: PathBuf,algo: String,validation:Vec<u8>,files: VaultwyrFileLinker) -> Self{
+        VaultWyrFolder { new_path, algo , validation, files}
     }
 
-    
-
+    pub fn validate_key(&self,key: &[u8; 32]) -> bool{
+        validate_key32(key, &self.validation)
+    }
+    pub fn validate_password(&self,password: &str) -> bool{
+        let key = match password_to_key32(password) {
+            Ok(key) => {key},
+            Err(_) => {return false;},
+        };
+    self.validate_key(&key)
+    }
 
 pub fn decrypt_all_files(&mut self, password: &str) -> io::Result<()> {
+
+    match self.validate_password(password) {
+        true => {},
+        false => return Err(io::Error::new(io::ErrorKind::Other, "The password is incorrect"))
+    }
     
     for file in &mut self.files {
         
@@ -125,6 +138,7 @@ pub struct Folder {
     pub algo: Option<String>,
     pub chunk_size: Option<usize>,
     pub files: RecursiveDirIter,
+    validation: Vec<u8>,
     pub max_size: usize
 }
 
@@ -152,28 +166,42 @@ impl Folder {
             algo: None,
             chunk_size: None,
             files,
+            validation: vec![0u8;32],
             max_size: 53_687_091_200 //50 GB default max size
         })
     }
 
-    fn write_header(&mut self) -> io::Result<()> {
+    fn write_header(&mut self,key:&[u8; 32]) -> io::Result<()> {
+        self.encrypt_validation(key);
         let new_path = self
             .new_path
             .to_str()
             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Invalid path"))?;
 
-        let algo = self.algo.as_deref().unwrap_or("aes256");
-        let chunk_size = self.chunk_size.unwrap_or(2048).to_string();
+        let algo = self.algo.as_deref().unwrap_or("aes256").as_bytes();
+        let mut buffer = Vec::<u8>::new();
+        //let buffer = format!("{}\n{}\n{}", new_path, algo, validation);
+        buffer.extend(new_path.as_bytes());
+        buffer.push(b'\n');
+        buffer.extend(algo);
+        buffer.push(b'\n');
+        buffer.extend(&self.validation);
+        
+        //let final_buffer = format!("m {} {}", buffer.len(), buffer);
+        
+        let mut final_buffer = Vec::<u8>::new();
+        final_buffer.extend("m ".as_bytes());
+        final_buffer.extend(buffer.len().to_string().as_bytes());
+        final_buffer.push(b' ');
+        final_buffer.extend(buffer);
 
-        let buffer = format!("{}\n{}\n{}", new_path, algo, chunk_size);
-        let final_buffer = format!("m {} {}", buffer.len(), buffer);
 
-        self.vaultwyr_file.write_all(final_buffer.as_bytes())?;
+        self.vaultwyr_file.write_all(&final_buffer)?;
         Ok(())
     }
 
-    fn write_files(&mut self, password: &str) -> io::Result<()> {
-        let key = password_to_key32(password)?;
+    fn write_files(&mut self, key:&[u8; 32]) -> io::Result<()> {
+        
 
         for file_result in &mut self.files {
             let file_entry = match file_result {
@@ -234,6 +262,18 @@ impl Folder {
 
         Ok(())
     }
+
+    fn encrypt_validation(&mut self, key:&[u8; 32]) {
+        let unencrypted_vec = vec![0u8;32];
+
+        if self.validation != unencrypted_vec {
+            panic!("the vector appears to already be encrypted")
+        }
+        
+        self.validation = aes_encrypt_with_key(key, &self.validation).expect("could not encrypt the validation");
+
+    }
+
     fn clear_self(self) -> io::Result<()>{
         let mut path = self.new_path;
         path.set_extension("");
@@ -244,10 +284,13 @@ impl Folder {
         fs::remove_dir_all(path)
         
     }
+
+
     ///Used to encrypt all the contents into the file when the file is encrypted the folder gets consumed since it shouldn't exist anymore
     pub fn encrypt_to_file(mut self, password: &str) -> io::Result<()> {
-        self.write_header()?;
-        self.write_files(password)?;
+        let key = password_to_key32(password)?;
+        self.write_header(&key)?;
+        self.write_files(&key)?;
         self.clear_self()?;
         Ok(())
     }
