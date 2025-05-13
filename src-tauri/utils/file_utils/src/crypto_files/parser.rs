@@ -6,7 +6,7 @@ use std::io::{self, BufReader, Seek, SeekFrom };
 use parser_utils::{parse_content, vec_to_string, };
 use crate::crypto_files::crypto_files::FolderFile;
 
-use super::crypto_files::VaultWyrFolder;
+use super::crypto_files::VaultwyrFile;
 
 
 
@@ -198,7 +198,7 @@ pub struct VaultwyrFileLinker{
 
 
 impl VaultwyrFileLinker{
-    pub fn from_vaultwyr_file(path:PathBuf) -> io::Result<Self>{
+    pub fn from_vaultwyr_file(path:&PathBuf) -> io::Result<Self>{
         let file = File::open(path)?;
         Ok(Self { vaultwyr_file_reader: BufReader::new(file), cur_fileheader: None })
     }
@@ -342,7 +342,20 @@ impl VaultWyrFileParser{
         linker, 
         reader }
     }
-    pub fn to_folder(mut self) -> VaultWyrFolder{
+
+    pub fn from_path(path:&PathBuf) -> io::Result<Self> {
+        let linker = VaultwyrFileLinker::from_vaultwyr_file(path)?;
+        let reader = BufReader::new(File::open(path)?);
+
+
+        Ok(Self{
+            linker,
+            reader
+        })
+    }
+
+
+    pub fn to_folder(mut self) -> VaultwyrFile{
         let header_type = match self.linker.next() {
             Some(header) => {header},
             None => {panic!("Could not find the main header")},
@@ -355,10 +368,10 @@ impl VaultWyrFileParser{
 
         
         //goes in reverse order since args are stored like this : new_path , algo, validation <(sequential pop starts from here)
-        VaultWyrFolder { 
+        VaultwyrFile { 
             validation: args.pop().expect("could not get the validation string from the main header"),
             algo: parser_utils::vec_to_string(args.pop().expect("could not get the algo from the main header")).expect("could not convert the algorythm type to string"),
-            new_path: PathBuf::from_str(parser_utils::vec_to_string(args.pop().expect("could not get the new path from the main header")).expect("Could not convert the new path to string").as_str()).expect("Error converting the path from string").with_extension("fvaultwyr"),
+            new_path: PathBuf::from_str(parser_utils::vec_to_string(args.pop().expect("could not get the new path from the main header")).expect("Could not convert the new path to string").as_str()).expect("Error converting the path from string"),
             
             
             files: self.linker,

@@ -75,8 +75,8 @@ fn create_original_file(&self) -> io::Result<File> {
 
 
 
-///used to represent a .fvaultwyr file
-pub struct VaultWyrFolder{
+///used to represent a .fvaultwyr and .vaultwyr file
+pub struct VaultwyrFile{
     pub new_path:PathBuf,
 	pub algo : String,
 	pub validation: Vec<u8>,
@@ -87,11 +87,11 @@ pub struct VaultWyrFolder{
 
 
 
-impl VaultWyrFolder{
+impl VaultwyrFile{
 
 
     pub fn new(new_path: PathBuf,algo: String,validation:Vec<u8>,files: VaultwyrFileLinker) -> Self{
-        VaultWyrFolder { new_path, algo , validation, files}
+        VaultwyrFile { new_path, algo , validation, files}
     }
 
     pub fn validate_key(&self,key: &[u8; 32]) -> bool{
@@ -131,33 +131,45 @@ pub fn decrypt_all_files(&mut self, password: &str) -> io::Result<()> {
 }
 
 ///This struct is used to represent a regular folder containing files
-///You can use it to create a fvaultwyr file
-pub struct Folder {
+///You can use it to create a fvaultwyr/vaultwyr file
+pub enum PathType{
+    File(RecursiveDirIter, PathBuf),
+    Folder(RecursiveDirIter)
+}
+
+
+pub struct EncryptionPath {
     pub new_path: PathBuf,
     pub vaultwyr_file: File,
     pub algo: Option<String>,
     pub chunk_size: Option<usize>,
-    pub files: RecursiveDirIter,
+    pub files: PathType,
     validation: Vec<u8>,
     pub max_size: usize
 }
 
-impl Folder {
+impl EncryptionPath {
     fn create_vaultwyr_file(path: PathBuf) -> io::Result<File> {
         
         OpenOptions::new().create_new(true).write(true).read(true).open(path)
     }
 
     pub fn new(mut path: PathBuf) -> io::Result<Self> {
-        if !path.is_dir() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "The provided path is not a directory",
-            ));
-        }
 
-        let files = RecursiveDirIter::new(&path)?;
-        path.set_extension("fvaultwyr");
+
+        let files ;
+
+        if !path.is_dir() {
+            
+            files = PathType::File(RecursiveDirIter::new(&path)?,path.clone());
+            path.set_extension("vaultwyr");
+        }
+        else {
+            
+            files = PathType::Folder(RecursiveDirIter::new(&path)?);
+            path.set_extension("fvaultwyr");
+        }
+        
         let vaultwyr_file = Self::create_vaultwyr_file(path.clone())?;
 
         Ok(Self {
@@ -203,13 +215,16 @@ impl Folder {
     fn write_files(&mut self, key:&[u8; 32]) -> io::Result<()> {
         
 
-        for file_result in &mut self.files {
-            let file_entry = match file_result {
+        for file_result in match &mut self.files {
+            PathType::Folder(f) => {f},
+            PathType::File(f, _) => f
+        } {
+            let file_path = match file_result {
                 Ok(entry) => entry,
                 Err(_) => continue,
             };
 
-            let file_path = file_entry.path();
+            
 
             // Skip if it is not a regular file
             if !file_path.is_file() {
@@ -276,12 +291,20 @@ impl Folder {
 
     fn clear_self(self) -> io::Result<()>{
         let mut path = self.new_path;
-        path.set_extension("");
+        match self.files {
+            PathType::File(_,p) => {path = p},
+            _ => {path.set_extension(""); ()}
+        };
         if calculate_dir_size(&path)? > self.max_size as u64{
             return Err(io::Error::new(io::ErrorKind::FileTooLarge , "The folder is too big to delete please update the max size"))
         }
+        if path.is_dir(){
+            fs::remove_dir_all(path)
+        }
+        else {
+            remove_file(path)
+        }
         
-        fs::remove_dir_all(path)
         
     }
 

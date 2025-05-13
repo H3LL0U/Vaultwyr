@@ -60,7 +60,7 @@ fn create_temp_dir() -> PathBuf {
 
         write!(file2, "this file is stored deeper in the folder").unwrap();
         // Create folder instance
-        let mut folder = Folder::new(temp_dir.clone()).unwrap();
+        let mut folder = EncryptionPath::new(temp_dir.clone()).unwrap();
         folder.algo = Some("aes256".to_string());
         folder.chunk_size = Some(1024);
 
@@ -97,9 +97,42 @@ fn create_temp_dir() -> PathBuf {
         
         let reader = BufReader::new(File::open(&path).unwrap());
 
-        let mut  folder= VaultWyrFileParser::new(VaultwyrFileLinker::from_vaultwyr_file(path).unwrap(), reader).to_folder();
+        let mut  folder= VaultWyrFileParser::new(VaultwyrFileLinker::from_vaultwyr_file(&path).unwrap(), reader).to_folder();
 
         folder.decrypt_all_files("password").unwrap();
+
+        
+    }
+
+    #[test]
+    fn test_one_file_encryption() {
+        let temp_dir = create_temp_dir();
+
+        // Create a test files
+        let test_file_path = temp_dir.join("test.txt");
+        let mut file = File::create(&test_file_path).unwrap();
+        let long_string = "This is a test file to be encrypted.".to_string().repeat(1000); // Repeat the string
+        writeln!(file, "{}", long_string).unwrap(); // Write the repeated string to the file
+
+        let file_to_encrypt = EncryptionPath::new(test_file_path).unwrap();
+
+        file_to_encrypt.encrypt_to_file("123").unwrap();
+
+        let new_path = temp_dir.join("test.vaultwyr");
+        dbg!(&new_path);
+        let encrypted_file = VaultWyrFileParser::from_path(&new_path).unwrap();
+
+        let mut folder = encrypted_file.to_folder();
+        folder.decrypt_all_files("123").unwrap();
+        clean_up_test_dir(&temp_dir);
+        ()
+
+        
+
+        
+
+
+
 
         
     }

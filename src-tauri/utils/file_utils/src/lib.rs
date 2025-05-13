@@ -51,8 +51,11 @@ pub fn calculate_dir_size(path: &Path) -> io::Result<u64> {
                 total_size += entry.metadata()?.len();
             }
         }
-    }
 
+    }
+    else{
+        total_size += fs::metadata(path)?.len();
+    }
     Ok(total_size)
 }
 
