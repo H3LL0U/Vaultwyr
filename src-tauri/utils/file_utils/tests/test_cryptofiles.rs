@@ -97,11 +97,11 @@ fn create_temp_dir() -> PathBuf {
         
         let reader = BufReader::new(File::open(&path).unwrap());
 
-        let mut  folder= VaultWyrFileParser::new(VaultwyrFileLinker::from_vaultwyr_file(&path).unwrap(), reader).to_folder();
+        let mut  folder= VaultWyrFileParser::from_path(&path).unwrap().to_folder();
 
         folder.decrypt_all_files("password").unwrap();
 
-        
+        clean_up_test_dir(&path);
     }
 
     #[test]

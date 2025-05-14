@@ -333,24 +333,20 @@ impl Iterator for FileChunkIterator{
 
 pub struct VaultWyrFileParser{
     linker: VaultwyrFileLinker,
-    reader: BufReader<File>
+    reader: BufReader<File>,
+    path: PathBuf
 }
 impl VaultWyrFileParser{
-    pub fn new(linker: VaultwyrFileLinker, reader: BufReader<File>) -> Self{
-        
-    VaultWyrFileParser { 
-        linker, 
-        reader }
-    }
 
     pub fn from_path(path:&PathBuf) -> io::Result<Self> {
         let linker = VaultwyrFileLinker::from_vaultwyr_file(path)?;
         let reader = BufReader::new(File::open(path)?);
-
+        let path = path.clone();
 
         Ok(Self{
             linker,
-            reader
+            reader,
+            path
         })
     }
 
@@ -371,7 +367,7 @@ impl VaultWyrFileParser{
         VaultwyrFile { 
             validation: args.pop().expect("could not get the validation string from the main header"),
             algo: parser_utils::vec_to_string(args.pop().expect("could not get the algo from the main header")).expect("could not convert the algorythm type to string"),
-            new_path: PathBuf::from_str(parser_utils::vec_to_string(args.pop().expect("could not get the new path from the main header")).expect("Could not convert the new path to string").as_str()).expect("Error converting the path from string"),
+            new_path: self.path,
             
             
             files: self.linker,

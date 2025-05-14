@@ -3,10 +3,10 @@ use aes_gcm::{
 };
 use std::io;
 
-pub fn aes_encrypt_with_key(key: [u8; 32], chunk: &[u8]) -> Result<Vec<u8>, Error> {
+pub fn aes_encrypt_with_key(key: &[u8; 32], chunk: &[u8]) -> Result<Vec<u8>, Error> {
 
     //generates an output that contains the data + the nonce at the end
-    let key = Key::<Aes256Gcm>::from_slice(&key);
+    let key = Key::<Aes256Gcm>::from_slice(key);
     let cipher = Aes256Gcm::new(key);
 
     let nonce = Aes256Gcm::generate_nonce(&mut OsRng); // 96-bit nonce
@@ -19,8 +19,8 @@ pub fn aes_encrypt_with_key(key: [u8; 32], chunk: &[u8]) -> Result<Vec<u8>, Erro
 
     Ok(output)
 }
-pub fn aes_decrypt_with_key(key: [u8; 32], chunk: &[u8]) -> Result<Vec<u8> , Error> {
-    let key = Key::<Aes256Gcm>::from_slice(&key);
+pub fn aes_decrypt_with_key(key: &[u8; 32], chunk: &[u8]) -> Result<Vec<u8> , Error> {
+    let key = Key::<Aes256Gcm>::from_slice(key);
     let cipher = Aes256Gcm::new(key);
 
     let (nonce_bytes, ciphertext) = chunk.split_at(12); // 96 bits
@@ -47,4 +47,14 @@ pub fn password_to_key32(password: &str) -> io::Result<[u8; 32]> {
 }
 
 
+///takes in an encrypted chunk which, when unecncrypted contains 32 bytes with value 0 and decrypts it. Then validates that it indeed has 32 0s
+/// true if that's the case
+/// else false
+pub fn validate_key32(key:&[u8;32], validation:&Vec<u8>) -> bool{
+    let result = match aes_decrypt_with_key(&key, &validation ){
+        Ok(d) => {d},
+        Err(_) => {return false},
+    } == vec![0u8;32];
+    result
+}
 
