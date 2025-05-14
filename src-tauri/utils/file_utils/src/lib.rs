@@ -1,12 +1,20 @@
+pub mod crypto_files;
 use serde::{Serialize, Deserialize};
+
 use core::panic;
+
 use sha2::{Sha256, Digest};
 use std::ffi::OsStr;
 use std::io::{self, Write, Read};
-use std::fs::{OpenOptions,File,remove_file};
-use std::path::{Path, PathBuf};
+use std::fs::{self ,remove_file, File, OpenOptions};
+use std::path::{ Path, PathBuf};
 use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32};
 use bincode::{self};
+
+pub use crypto_files::crypto_files::{*};
+
+
+pub use crate::crypto_files::{*};
 #[derive(Serialize,Deserialize)]
 pub struct EncryptionOptions {
     //#[serde(skip_serializing)]
@@ -23,6 +31,34 @@ pub struct EncryptionOptions {
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
+
+
+
+pub fn calculate_dir_size(path: &Path) -> io::Result<u64> {
+    let mut total_size = 0;
+
+    if path.is_dir() {
+        // Iterate through the directory
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            let entry_path = entry.path();
+
+            if entry_path.is_dir() {
+                // Recurse into subdirectories
+                total_size += calculate_dir_size(&entry_path)?;
+            } else {
+                // Add file size
+                total_size += entry.metadata()?.len();
+            }
+        }
+
+    }
+    else{
+        total_size += fs::metadata(path)?.len();
+    }
+    Ok(total_size)
+}
+
 
 impl EncryptionOptions{
 
@@ -117,12 +153,12 @@ impl EncryptionOptions{
         original_file.read_to_string(&mut original_file_contents)?;
         let key = password_to_key32(password)?;
         
-        self.validation = match aes_encrypt_with_key(key, &self.validation){
+        self.validation = match aes_encrypt_with_key(&key, &self.validation){
             Ok(n) => n,
             Err(_) => return Err(io::Error::new(io::ErrorKind::Other, "Could not encrypt file contents"))
         };
         //encrypt main data
-        self.data = match aes_encrypt_with_key(key, &original_file_contents.as_bytes()){
+        self.data = match aes_encrypt_with_key(&key, &original_file_contents.as_bytes()){
             Ok(n) => n,
             Err(_) => return Err(io::Error::new(io::ErrorKind::Other, "Could not encrypt file contents")),
             
@@ -147,12 +183,12 @@ impl EncryptionOptions{
         let key = password_to_key32(password)?;
         
         //decrypt validation vector
-        self.validation = match aes_decrypt_with_key(key, &self.validation){
+        self.validation = match aes_decrypt_with_key(&key, &self.validation){
             Ok(n) => n,
             Err(_) => return Err(io::Error::new(io::ErrorKind::Other, "Could not encrypt validation contents"))
         };
         //decrypt main data
-        self.data = match aes_decrypt_with_key(key, &self.data){
+        self.data = match aes_decrypt_with_key(&key, &self.data){
             Ok(n) => n,
             Err(_) => return Err(io::Error::new(io::ErrorKind::Other, "Could not encrypt file contents")),
             
@@ -190,53 +226,7 @@ pub fn calculate_file_hash<P: AsRef<Path>>(path: P) -> io::Result<String> {
 }
 
 
+//chunk iterator
 
 
 
-
-
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_encryption_options() -> Result<(), Box<dyn std::error::Error>> {
-        let dir = PathBuf::from("./temp/"); 
-        let test_file_path = &dir.as_path().join("hello.txt");
-        let test_file_new_path = &dir.as_path().join("hello.vaultwyr");
-        let file_content = "hii";
-        let test_pswd = "hello";
-    
-        // Create a test file with some content
-        {
-            let mut test_file = OpenOptions::new()
-                .truncate(true)
-                .create(true)
-                .write(true)
-                .open(&test_file_path)?;
-            test_file.write_all(file_content.as_bytes())?;
-            println!("file created")
-        }
-    
-        // Encrypt the file
-        {
-        let mut decrypted_file = EncryptionOptions::new(PathBuf::from(&test_file_path), None, None)?;
-        decrypted_file.lock_file_with_password(test_pswd)?;
-        println!("file has been locked");
-        }
-
-
-        let mut created_from_file = EncryptionOptions::from_file(PathBuf::from(&test_file_new_path))?;
-        dbg!("struct built from new encrypted file");
-        created_from_file.unlock_file_with_password(test_pswd)?;
-
-        let data_content = created_from_file.get_data_as_utf()?;
-    
-        // Check if the decrypted content matches the original
-        assert_eq!(data_content, file_content.to_string());
-    
-        Ok(())
-    }
-}

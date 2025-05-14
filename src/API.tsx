@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 async function encryptWithPassword(password: string, file_path: string) {
     try {
-      const result = await invoke("encrypt_file_with_password_api", { password, path: file_path })
+      const result = await invoke("encrypt_path_with_password_api", { password, path: file_path })
       
       return result;
     } catch (err) {
@@ -14,7 +14,7 @@ async function encryptWithPassword(password: string, file_path: string) {
 async function decryptWithPassword(password: string, file_path: string) {
 
       try {
-      const result = await invoke("decrypt_file_with_password_api", { password, path: file_path })
+      const result = await invoke("decrypt_path_with_password_api", { password, path: file_path })
       return result;
     } catch (err) {
       console.error("Invoke error:", err);

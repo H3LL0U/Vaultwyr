@@ -1,5 +1,5 @@
-use file_utils::EncryptionOptions;
-use std::path::PathBuf;
+use file_utils::{crypto_files::crypto_files::*, Parser::VaultWyrFileParser};
+use std::{path::{Path, PathBuf}, str::FromStr};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -8,39 +8,34 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn encrypt_file_with_password_api(path: &str, password: &str) -> String {
-    let normalized_path = path.replace("\\", "/");
-    let path_buf = PathBuf::from(&normalized_path);
+fn encrypt_path_with_password_api(path: &str, password: &str) -> String {
+    let path = PathBuf::from_str(path).unwrap();
+    let path_to_encrypt = EncryptionPath::new(path).unwrap();
 
-    let mut selected_file = match EncryptionOptions::new(path_buf, None, None) {
-        Ok(t) => t,
-        Err(e) => return format!("Error locating the file\n{}", e),
-    };
-
-    match selected_file.lock_file_with_password(password) {
-        Ok(_) => return "File has been encrypted with your selected password".to_string(),
-        Err(e) => return format!("There was an error when encrypting your file:\n{}", e),
-    };
+    match path_to_encrypt.encrypt_to_file(password) {
+        Ok(_) => {"File encrypted Successfully".to_string()},
+        Err(_) => {"Error encrypting file".to_string()},
+    }
 
     
 }
 
 #[tauri::command]
-fn decrypt_file_with_password_api(path: &str, password: &str) -> String {
-    let normalized_path = path.replace("\\", "/");
-    let path_buf = PathBuf::from(&normalized_path);
+fn decrypt_path_with_password_api(path: &str, password: &str) -> String {
 
-    let mut selected_file = match  EncryptionOptions::from_file(path_buf) {
-        Ok(t) => t,
-        Err(e) => return format!("Error locating the file\n{}", e),
-        
-    };
+    let path = PathBuf::from_str(path).unwrap();
 
-    match selected_file.unlock_file_with_password(password) {
-        Ok(_) => return "File has been decrypted successfully".to_string(),
-        Err(e) => return format!("There was an error when decrypting your file:\n{}", e),
-    };
-    
+
+    let mut encrypted_file = VaultWyrFileParser::from_path(&path).unwrap().to_folder();
+
+
+
+
+    match encrypted_file.decrypt_all_files(password) {
+        Ok(_) => {"decrypted file successfully".to_string()},
+        Err(_) => {"Wrong password".to_string()},
+    }
+
 
 
 }
@@ -52,8 +47,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             greet,
-            encrypt_file_with_password_api,
-            decrypt_file_with_password_api
+            encrypt_path_with_password_api,
+            decrypt_path_with_password_api
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
