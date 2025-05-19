@@ -70,7 +70,14 @@ const PathSelect: React.FC<PathSelectProps> = ({ submitFunc, filename, setFileNa
         📄
       </button>
 
-      <button type="button" onClick={handleFolderSelect} style={{ marginLeft: "0.5rem" }}>
+      <button 
+  type="button" 
+  onClick={handleFolderSelect} 
+  style={{ 
+    marginLeft: "0.5rem", 
+    display: mode === 1 ? "none" : "block" 
+  }}
+>
         📁
       </button>
 

@@ -22,10 +22,21 @@ async function decryptWithPassword(password: string, file_path: string) {
     }
 }
 
+async function path_exists(path:string) {
+      try {
+      const result = await invoke("path_exists", {path})
+      return result;
+    } catch (err) {
+      console.error("Invoke error:", err);
+      throw err;
+    }
+}
+
 
 
 export default {
   encryptWithPassword,
   decryptWithPassword,
+  path_exists
 };
 

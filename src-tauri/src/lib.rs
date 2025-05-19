@@ -39,6 +39,13 @@ fn decrypt_path_with_password_api(path: &str, password: &str) -> String {
 
 
 }
+#[tauri::command]
+fn path_exists(path:String) -> bool{
+    let path = PathBuf::from(path);
+    path.exists()
+}
+
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -48,7 +55,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             encrypt_path_with_password_api,
-            decrypt_path_with_password_api
+            decrypt_path_with_password_api,
+            path_exists
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

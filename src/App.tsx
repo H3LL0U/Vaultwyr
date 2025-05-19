@@ -13,7 +13,10 @@ import "reactjs-popup/dist/index.css";
 import "./App.css";
 
 function App() {
-  const [filename, setFileName] = useState("") //getting the filename selected by the user
+
+  const vaultwyr_extensions = ["vaultwyr", "fvaultwyr"]
+
+  const [filename, setFileName] = useState("") //getting the filename/path selected by the user 
 
   const [openConfirmPopup, setOpenConfirmPopup] = useState(false); //getting the popup state
   
@@ -33,7 +36,24 @@ function App() {
     popup_confirm_decrypt: "Are you sure you want to DECRYPT the file(s)?"
   };
 
-  function showConfirmPopUp() {
+  async function showConfirmPopUp() {
+    //validate the selected path
+    if (!await API.path_exists(filename)){
+      alert("The path does not exist")
+      return
+    }
+
+    let file_extension = filename.split(".").pop()?.trim() || ""
+    if (vaultwyr_extensions.includes(file_extension) && mode==0){
+      alert("Cannot encrypt a vaultwyr file twice")
+      return
+    }
+
+    if (!(vaultwyr_extensions.includes(file_extension)) && mode == 1){
+      alert("This file is not a vaultwyr file")
+      return
+    }
+
     if (filename){
       setOpenConfirmPopup(true);
     }
@@ -91,6 +111,7 @@ function App() {
     
     <main className="container">
       <p>{filename}</p>
+
       <ModeSelect index={mode} setIndex={setMode}><h1>Encrypt</h1><h1>Decrypt</h1></ModeSelect>
 
       <p className="selection_text">Choose file or a folder that you want to {mode ===0? "encrypt" : "decrypt"}</p>
