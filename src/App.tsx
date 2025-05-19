@@ -23,7 +23,7 @@ function App() {
 
 
 
-  const [response, setResponse] = useState("") //response message after encrypting/decrypting
+  const [_response, setResponse] = useState("") //response message after encrypting/decrypting
 
   const [mode, setMode] = useState(0) //getting the mode (0:encryption, 1: decryption)
   const messages = {

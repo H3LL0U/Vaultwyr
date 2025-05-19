@@ -1,13 +1,13 @@
 
 
 
-use std::fs::{self, DirEntry, ReadDir};
+use std::fs::{self, ReadDir};
 use std::io;
 use std::path::{Path, PathBuf};
 
 
 
-/// An iterator that recursively traverses a directory and yields `Result<DirEntry, io::Error>`.
+/// An iterator that recursively traverses a directory and yields `Result<PathBuf, io::Error>`.
 
 
 enum PathType{

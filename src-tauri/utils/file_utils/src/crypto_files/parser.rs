@@ -64,22 +64,33 @@ pub fn vec_to_string(vector: Vec<u8>) -> io::Result<String> {
 
     }
 
-    pub fn split_into_chunks(data: Vec<u8>, delimiter: u8, num_chunks: usize) -> Vec<Vec<u8>> {
-        let mut splits = data.split(|&byte| byte == delimiter);
-        let mut chunks = Vec::with_capacity(num_chunks);
+pub fn split_into_chunks(data: Vec<u8>, delimiter: u8, num_chunks: usize) -> Vec<Vec<u8>> {
+    let mut splits = data.split(|&byte| byte == delimiter);
+    let mut chunks = Vec::with_capacity(num_chunks);
 
-        for _ in 0..num_chunks - 1 {
-            if let Some(chunk) = splits.next() {
-                chunks.push(chunk.to_vec());
-            }
+    for _ in 0..num_chunks - 1 {
+        if let Some(chunk) = splits.next() {
+            chunks.push(chunk.to_vec());
         }
-
-        // Collect remaining data as the last chunk
-        let remaining: Vec<u8> = splits.flatten().copied().collect();
-        chunks.push(remaining);
-
-        chunks
     }
+
+    
+    let mut remaining = Vec::new();
+    for part in splits {
+        remaining.extend_from_slice(part);
+        remaining.push(delimiter); 
+    }
+
+    
+    if let Some(last) = remaining.last() {
+        if *last == delimiter {
+            remaining.pop();
+        }
+    }
+
+    chunks.push(remaining);
+    chunks
+}
 
     
 }

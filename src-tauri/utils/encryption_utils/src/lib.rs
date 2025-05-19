@@ -55,6 +55,7 @@ pub fn validate_key32(key:&[u8;32], validation:&Vec<u8>) -> bool{
         Ok(d) => {d},
         Err(_) => {return false},
     } == vec![0u8;32];
+    
     result
 }
 

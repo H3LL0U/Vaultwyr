@@ -1,4 +1,4 @@
-use file_utils::{crypto_files::crypto_files::*, Parser::VaultWyrFileParser};
+use file_utils::{crypto_files::crypto_files::*, parser::VaultWyrFileParser};
 use std::{path::{Path, PathBuf}, str::FromStr};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
