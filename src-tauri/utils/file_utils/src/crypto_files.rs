@@ -1,3 +1,3 @@
 pub mod crypto_files;
-pub mod Parser;
+pub mod parser;
 pub mod file_traversal;

@@ -12,7 +12,7 @@ use std::fs::{remove_file, File, OpenOptions};
 use std::path:: PathBuf;
 use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32, validate_key32};
 use crate::calculate_file_hash;
-use crate::crypto_files::Parser::*;
+use crate::crypto_files::parser::*;
 use crate::file_traversal::RecursiveDirIter;
 use crate::calculate_dir_size;
 
@@ -95,6 +95,7 @@ impl VaultwyrFile{
     }
 
     pub fn validate_key(&self,key: &[u8; 32]) -> bool{
+
         validate_key32(key, &self.validation)
     }
     pub fn validate_password(&self,password: &str) -> bool{
@@ -176,7 +177,7 @@ impl EncryptionPath {
             new_path: path,
             vaultwyr_file,
             algo: None,
-            chunk_size: None,
+            chunk_size: Some(2048),
             files,
             validation: vec![0u8;32],
             max_size: 53_687_091_200 //50 GB default max size
@@ -197,6 +198,7 @@ impl EncryptionPath {
         buffer.push(b'\n');
         buffer.extend(algo);
         buffer.push(b'\n');
+        
         buffer.extend(&self.validation);
         
         //let final_buffer = format!("m {} {}", buffer.len(), buffer);

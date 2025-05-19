@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests{
     
-    use std::{fs::File, io::{ BufReader, Read}, path::PathBuf, str::FromStr};
-    use file_utils::Parser::*;
+    use std::{fs::File, io::{ Read}, path::PathBuf, str::FromStr};
+    use encryption_utils::{aes_decrypt_with_key, password_to_key};
+    use file_utils::parser::*;
     use file_utils::crypto_files::crypto_files::{*};
     use std::fs::{self};
 
@@ -34,6 +35,8 @@ fn create_temp_dir() -> PathBuf {
 
     #[test]
     fn test_encryption_and_decryption() {
+        //running multipple times just in case
+        for _ in 1..9{
         let temp_dir = create_temp_dir();
 
         // Create a test files
@@ -86,7 +89,7 @@ fn create_temp_dir() -> PathBuf {
         clean_up_test_dir(&temp_dir);
 
     }
-
+    }
         
         fn test_decryption () {
         let path = match PathBuf::from_str("./tempg.fvaultwyr") {
@@ -95,9 +98,9 @@ fn create_temp_dir() -> PathBuf {
         };
 
         
-        let reader = BufReader::new(File::open(&path).unwrap());
+        //let _reader = BufReader::new(File::open(&path).unwrap());
 
-        let mut  folder= VaultWyrFileParser::from_path(&path).unwrap().to_folder();
+        let mut folder = VaultWyrFileParser::from_path(&path).unwrap().to_folder();
 
         folder.decrypt_all_files("password").unwrap();
 
@@ -106,6 +109,8 @@ fn create_temp_dir() -> PathBuf {
 
     #[test]
     fn test_one_file_encryption() {
+        //running multipple times just in case
+        for _ in 1..9{
         let temp_dir = create_temp_dir();
 
         // Create a test files
@@ -119,12 +124,13 @@ fn create_temp_dir() -> PathBuf {
         file_to_encrypt.encrypt_to_file("123").unwrap();
 
         let new_path = temp_dir.join("test.vaultwyr");
-        dbg!(&new_path);
+        
         let encrypted_file = VaultWyrFileParser::from_path(&new_path).unwrap();
 
         let mut folder = encrypted_file.to_folder();
         folder.decrypt_all_files("123").unwrap();
         clean_up_test_dir(&temp_dir);
+        }
         ()
 
         
@@ -135,6 +141,74 @@ fn create_temp_dir() -> PathBuf {
 
 
         
+    }
+    #[test]
+    fn test_decrypt_validation(){
+        let validation: Vec<u8> = vec![
+    169,
+    201,
+    204,
+    207,
+    41,
+    226,
+    49,
+    143,
+    139,
+    21,
+    53,
+    122,
+    120,
+    91,
+    243,
+    211,
+    91,
+    247,
+    179,
+    110,
+    139,
+    95,
+    234,
+    146,
+    115,
+    167,
+    81,
+    194,
+    244,
+    89,
+    186,
+    32,
+    88,
+    203,
+    37,
+    158,
+    25,
+    216,
+    98,
+    185,
+    205,
+    101,
+    178,
+    29,
+    24,
+    90,
+    60,
+    153,
+    239,
+    208,
+    208,
+    168,
+    227,
+    118,
+    255,
+    7,
+    200,
+    223,
+    108,
+    117,
+];
+    let key = password_to_key("password").unwrap();
+    let a = aes_decrypt_with_key(&key, &validation).unwrap();
+    dbg!(&a);
     }
 
 }
