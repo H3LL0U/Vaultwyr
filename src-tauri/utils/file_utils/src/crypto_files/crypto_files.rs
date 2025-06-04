@@ -11,17 +11,21 @@ use std::io::{self, BufReader, Read, Write};
 use std::fs::{remove_file, File, OpenOptions};
 use std::path:: PathBuf;
 use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32, validate_key32};
-use crate::calculate_file_hash;
+use crate::file_traversal::calculate_file_hash;
 use crate::crypto_files::parser::*;
 use crate::file_traversal::RecursiveDirIter;
-use crate::calculate_dir_size;
+use crate::file_traversal::calculate_dir_size;
+use crate::behaviour;
+use tauri::{App, AppHandle};
 
+use dialog_lib::show_error;
 ///Used for getting the file chunks from some file and decryption
 pub struct FolderFile{
     pub original_path: PathBuf,
     pub file_hash: String,
     pub data: FileChunkIterator,
 }
+
 
 
 
@@ -146,7 +150,8 @@ pub struct EncryptionPath {
     pub chunk_size: Option<usize>,
     pub files: PathType,
     validation: Vec<u8>,
-    pub max_size: usize
+    pub max_size: usize,
+    on_error_behaviour: behaviour::OnErrorBehaviour
 }
 
 impl EncryptionPath {
@@ -180,7 +185,8 @@ impl EncryptionPath {
             chunk_size: Some(2048),
             files,
             validation: vec![0u8;32],
-            max_size: 53_687_091_200 //50 GB default max size
+            max_size: 53_687_091_200, //50 GB default max size
+            on_error_behaviour: behaviour::OnErrorBehaviour::AskUser //ask user by default
         })
     }
 
@@ -312,7 +318,8 @@ impl EncryptionPath {
 
 
     ///Used to encrypt all the contents into the file when the file is encrypted the folder gets consumed since it shouldn't exist anymore
-    pub fn encrypt_to_file(mut self, password: &str) -> io::Result<()> {
+     pub fn encrypt_to_file(mut self, password: &str) -> io::Result<()> {
+        
         let key = password_to_key32(password)?;
         self.write_header(&key)?;
         self.write_files(&key)?;

@@ -6,7 +6,7 @@ authors = ["you"]
 edition = "2021"
 
 [workspace]
-members = [
+members = [ "utils/dialog_lib",
     "utils/encryption_utils",
     "utils/file_utils",
 ]

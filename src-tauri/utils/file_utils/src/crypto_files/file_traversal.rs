@@ -1,10 +1,10 @@
 
 
 
-use std::fs::{self, ReadDir};
-use std::io;
+use std::fs::{self, File, ReadDir};
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
-
+use sha2::{Sha256, Digest};
 
 
 /// An iterator that recursively traverses a directory and yields `Result<PathBuf, io::Error>`.
@@ -84,3 +84,50 @@ impl Iterator for RecursiveDirIter {
     }
 }
 
+pub fn calculate_file_hash<P: AsRef<Path>>(path: P) -> io::Result<String> {
+    
+    let mut file = File::open(path)?;
+
+    
+    let mut hasher = Sha256::new();
+
+    // Buffer to read chunks of the file (e.g., 4 KB at a time)
+    let mut buffer = [0; 4096]; 
+    loop {
+        let bytes_read = file.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break; // End of file
+        }
+        // Update the hasher with the chunk of data
+        hasher.update(&buffer[..bytes_read]);
+    }
+
+    
+    let hash = hasher.finalize();
+    Ok(format!("{:x}", hash)) 
+}
+
+pub fn calculate_dir_size(path: &Path) -> io::Result<u64> {
+    let mut total_size = 0;
+
+    if path.is_dir() {
+        // Iterate through the directory
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            let entry_path = entry.path();
+
+            if entry_path.is_dir() {
+                // Recurse into subdirectories
+                total_size += calculate_dir_size(&entry_path)?;
+            } else {
+                // Add file size
+                total_size += entry.metadata()?.len();
+            }
+        }
+
+    }
+    else{
+        total_size += fs::metadata(path)?.len();
+    }
+    Ok(total_size)
+}

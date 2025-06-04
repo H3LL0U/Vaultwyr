@@ -1,0 +1,11 @@
+[package]
+name = "dialog_lib"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+egui = "0.31.1"
+eframe = "0.31.1"
+strum = "0.27.1"
+strum_macros = "0.27.1"
+native-dialog = "0.9.0"

@@ -1,6 +1,6 @@
 use file_utils::{crypto_files::crypto_files::*, parser::VaultWyrFileParser};
 use std::{path::{Path, PathBuf}, str::FromStr};
-
+use tauri::AppHandle;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -8,7 +8,7 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn encrypt_path_with_password_api(path: &str, password: &str) -> String {
+fn encrypt_path_with_password_api(handle: AppHandle, path: &str, password: &str) -> String {
     let path = PathBuf::from_str(path).unwrap();
     let path_to_encrypt = EncryptionPath::new(path).unwrap();
 
@@ -21,7 +21,10 @@ fn encrypt_path_with_password_api(path: &str, password: &str) -> String {
 }
 
 #[tauri::command]
-fn decrypt_path_with_password_api(path: &str, password: &str) -> String {
+fn decrypt_path_with_password_api(handle: AppHandle, path: &str, password: &str) -> String {
+
+
+
 
     let path = PathBuf::from_str(path).unwrap();
 

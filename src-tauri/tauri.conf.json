@@ -22,24 +22,36 @@
       "csp": null
     }
   },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
-    "windows": {
+"bundle": {
+  "active": true,
+  "targets": "all",
+  "icon": [
+    "icons/32x32.png",
+    "icons/128x128.png",
+    "icons/128x128@2x.png",
+    "icons/icon.icns",
+    "icons/icon.ico",
+    "icons/vaultwyr_logo.svg",
+    "icons/vaultwyr.svg",
+    "icons/fvaultwyr.svg"
+  ],
+  "fileAssociations": [
+    {
+      "ext": ["vaultwyr"],
+      "name": "VaultWyr Vault File",
+      "description": "Encrypted file used by VaultWyr"
+    },
+    {
+      "ext": ["fvaultwyr"],
+      "name": "VaultWyr Fast Vault File",
+      "description": "Encrypted folder used by VaultWyr"
+    }
+  ],
+  "windows": {
     "wix": {
-        "language": ["en-US"]
-      }
+      "language": ["en-US"]
+    }
   }
+}
 
-
-
-
-  }
 }
