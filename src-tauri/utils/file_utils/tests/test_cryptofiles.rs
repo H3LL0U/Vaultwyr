@@ -3,7 +3,7 @@ mod tests{
     
     use std::{fs::File, io::{ Read}, path::PathBuf, str::FromStr};
     use encryption_utils::{aes_decrypt_with_key, password_to_key};
-    use file_utils::{behaviour, parser::*};
+    use file_utils::{behaviour::{self, OnErrorBehaviour}, parser::*};
     use file_utils::crypto_files::crypto_files::{*};
     use std::fs::{self};
 
@@ -64,7 +64,7 @@ fn create_temp_dir() -> PathBuf {
 
         write!(file2, "this file is stored deeper in the folder").unwrap();
         // Create folder instance
-        let mut folder = EncryptionPath::new(temp_dir.clone()).unwrap().on_error_behaviour(behaviour::OnErrorBehaviour::TerminateOnError);
+        let mut folder = EncryptionPath::new(temp_dir.clone(),Some(behaviour::OnErrorBehaviour::TerminateOnError)).unwrap().on_error_behaviour(behaviour::OnErrorBehaviour::TerminateOnError);
         folder.algo = Some("aes256".to_string());
         folder.chunk_size = Some(1024);
 
@@ -124,7 +124,7 @@ fn create_temp_dir() -> PathBuf {
         let long_string = "This is a test file to be encrypted.".to_string().repeat(1000); // Repeat the string
         writeln!(file, "{}", long_string).unwrap(); // Write the repeated string to the file
 
-        let file_to_encrypt = EncryptionPath::new(test_file_path).unwrap().on_error_behaviour(behaviour::OnErrorBehaviour::TerminateOnError);
+        let file_to_encrypt = EncryptionPath::new(test_file_path,Some(OnErrorBehaviour::TerminateOnError)).unwrap().on_error_behaviour(behaviour::OnErrorBehaviour::TerminateOnError);
 
         match file_to_encrypt.encrypt_to_file("123") {
             Some(e) => {panic!("{:?}",e)},

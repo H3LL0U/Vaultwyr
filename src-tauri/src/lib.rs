@@ -10,7 +10,10 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn encrypt_path_with_password_api(handle: AppHandle, path: &str, password: &str) -> String {
     let path = PathBuf::from_str(path).unwrap();
-    let path_to_encrypt = EncryptionPath::new(path).unwrap();
+    let path_to_encrypt = match EncryptionPath::new(path,None) {
+        Ok(k) => {k},
+        Err(_) => { return "Encryption Cancelled".to_string();},
+    };
 
     match path_to_encrypt.encrypt_to_file(password) {
         None => {"File encrypted Successfully".to_string()},

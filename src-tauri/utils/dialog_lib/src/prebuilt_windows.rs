@@ -38,5 +38,9 @@ pub fn ask_terminate_retry(title: impl ToString, content: impl ToString) -> Opti
     .show()    
 }
 
-
+pub fn ask_replace_terminate_retry(title: impl ToString, content: impl ToString) -> Option<UserResponseReplaceTerminateRetry> {
+    build_default_window::<UserResponseReplaceTerminateRetry>(title, content)
+    .button_collors(vec![Color32::from_rgb(255, 125, 125), Color32::from_rgb(255, 200, 200), Color32::from_rgb(20, 20, 255)])
+    .show()    
+}
 

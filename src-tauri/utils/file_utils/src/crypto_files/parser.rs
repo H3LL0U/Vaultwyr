@@ -301,12 +301,6 @@ impl Iterator for VaultwyrFileLinker{
             }
         }
 
-
-
-
-
-
-
     }
 }
 

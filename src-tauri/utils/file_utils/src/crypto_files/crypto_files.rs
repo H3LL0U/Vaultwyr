@@ -20,6 +20,8 @@ use crate::file_traversal::calculate_dir_size;
 use crate::behaviour::{self, OnErrorBehaviour, VaultwyrError};
 use tauri::{App, AppHandle};
 
+
+use dialog_lib::responses::*;
 use dialog_lib::prebuilt_windows::*;
 ///Used for getting the file chunks from some file and decryption
 pub struct FolderFile{
@@ -164,14 +166,14 @@ impl EncryptionPath {
         self
     }
 
-    fn create_vaultwyr_file(path: PathBuf) -> io::Result<File> {
+    fn create_vaultwyr_file(path: &PathBuf) -> io::Result<File> {
         
         OpenOptions::new().create_new(true).write(true).read(true).open(path)
     }
 
-    pub fn new(mut path: PathBuf) -> io::Result<Self> {
+    pub fn new(mut path: PathBuf, optional_on_error_behaviour: Option<OnErrorBehaviour>) -> io::Result<Self> {
 
-
+        let on_error_behaviour = optional_on_error_behaviour.unwrap_or(OnErrorBehaviour::AskUser);
         let files ;
 
         if !path.is_dir() {
@@ -184,9 +186,43 @@ impl EncryptionPath {
             files = PathType::Folder(RecursiveDirIter::new(&path)?);
             path.set_extension("fvaultwyr");
         }
+        let vaultwyr_file:File;
+        loop {
+            
         
-        let vaultwyr_file = Self::create_vaultwyr_file(path.clone())?;
+        match Self::create_vaultwyr_file(&path.clone()) {
+            Ok(f) => {vaultwyr_file = f;
+            break;},
+            Err(_) => {
+                match on_error_behaviour {
+                    OnErrorBehaviour::AskUser => {
+                        //TODO: Add a rename pop-up that asks a user if they want to rename the vaultwyr file to some other name instead of using the default
+                        match ask_replace_terminate_retry("Error creating the initial Vaultwyr file", format!("There was an error when creating the vaultwyr file\nPlease check if you have the file created at the following location:\n{:?}",&path).as_str()) {
+                            Some(UserResponseReplaceTerminateRetry::Terminate) |None => {return Err(io::Error::new(io::ErrorKind::AlreadyExists, "The Vaultwyr path already exists"))},
+                            Some(UserResponseReplaceTerminateRetry::Retry) => {continue;}
+                            Some(UserResponseReplaceTerminateRetry::Replace) =>{
+                                match remove_file(&path) {
+                                    Ok(_) => {continue;},
+                                    Err(_) => {
 
+                                        let _ = close_popup("Could not replace the file", "An error occurred when trying to replace the file");
+                                        return Err(io::Error::new(io::ErrorKind::AlreadyExists, "The Vaultwyr path already exists"))
+                                    },
+                                }
+                            }
+                            
+                        }
+                    },
+                    OnErrorBehaviour::TerminateOnError => {
+                       return Err(io::Error::new(io::ErrorKind::AlreadyExists, "The Vaultwyr path already exists")) 
+                    }
+                }
+
+
+
+            },
+        };
+        }
         Ok(Self {
             new_path: path,
             vaultwyr_file,
@@ -195,8 +231,8 @@ impl EncryptionPath {
             files,
             validation: vec![0u8;32],
             max_size: 53_687_091_200, //50 GB default max size
-            on_error_behaviour: behaviour::OnErrorBehaviour::AskUser, //ask user by default
-            paths: Vec::new()
+            on_error_behaviour: on_error_behaviour, //ask user by default
+            paths: Vec::new() // used to store the paths that were successfully encrypted
 
         })
     }
@@ -447,13 +483,6 @@ impl EncryptionPath {
         }
 
         None
-
-        //if path.is_dir(){
-        //    fs::remove_dir_all(path)
-        //}
-        //else {
-        //    remove_file(path)
-        //}
         
         
     }

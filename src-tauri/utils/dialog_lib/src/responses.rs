@@ -54,4 +54,12 @@
         }
     }
 
+    user_response! {
+        pub enum  UserResponseReplaceTerminateRetry{
+            Replace,
+            Terminate,
+            Retry
+        }
+    }
+
 
