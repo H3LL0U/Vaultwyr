@@ -3,13 +3,14 @@ mod tests{
     
     use std::{fs::File, io::{ Read}, path::PathBuf, str::FromStr};
     use encryption_utils::{aes_decrypt_with_key, password_to_key};
-    use file_utils::parser::*;
+    use file_utils::{behaviour, parser::*};
     use file_utils::crypto_files::crypto_files::{*};
     use std::fs::{self};
 
     use std::env;
     use std::io::Write;
 
+    use serial_test::serial;
 fn create_temp_dir() -> PathBuf {
         let current_dir = env::current_dir().unwrap();
         let temp_dir = current_dir.join(".\\tempg");
@@ -32,8 +33,8 @@ fn create_temp_dir() -> PathBuf {
 
 
 
-
     #[test]
+    #[serial]
     fn test_encryption_and_decryption() {
         //running multipple times just in case
         for _ in 1..9{
@@ -63,12 +64,15 @@ fn create_temp_dir() -> PathBuf {
 
         write!(file2, "this file is stored deeper in the folder").unwrap();
         // Create folder instance
-        let mut folder = EncryptionPath::new(temp_dir.clone()).unwrap();
+        let mut folder = EncryptionPath::new(temp_dir.clone()).unwrap().on_error_behaviour(behaviour::OnErrorBehaviour::TerminateOnError);
         folder.algo = Some("aes256".to_string());
         folder.chunk_size = Some(1024);
 
         // Encrypt the files and write to vault file
-        folder.encrypt_to_file("password").unwrap();
+        match folder.encrypt_to_file("password") {
+            Some(e) => {panic!("{:?}",e)},
+            None => {},
+        };
     
         // Check if the vault file has been created and encrypted
         let vault_file_path = temp_dir.with_extension("fvaultwyr");
@@ -108,6 +112,7 @@ fn create_temp_dir() -> PathBuf {
     }
 
     #[test]
+    #[serial]
     fn test_one_file_encryption() {
         //running multipple times just in case
         for _ in 1..9{
@@ -119,9 +124,12 @@ fn create_temp_dir() -> PathBuf {
         let long_string = "This is a test file to be encrypted.".to_string().repeat(1000); // Repeat the string
         writeln!(file, "{}", long_string).unwrap(); // Write the repeated string to the file
 
-        let file_to_encrypt = EncryptionPath::new(test_file_path).unwrap();
+        let file_to_encrypt = EncryptionPath::new(test_file_path).unwrap().on_error_behaviour(behaviour::OnErrorBehaviour::TerminateOnError);
 
-        file_to_encrypt.encrypt_to_file("123").unwrap();
+        match file_to_encrypt.encrypt_to_file("123") {
+            Some(e) => {panic!("{:?}",e)},
+            None => {},
+        };
 
         let new_path = temp_dir.join("test.vaultwyr");
         

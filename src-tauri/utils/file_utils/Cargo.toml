@@ -3,6 +3,10 @@ name = "file_utils"
 version = "0.1.0"
 edition = "2021"
 
+
+[dev-dependencies]
+serial_test = "3.2.0"
+
 [dependencies]
 encryption_utils = {path = "../encryption_utils"}
 dialog_lib =   {path = "../dialog_lib"}

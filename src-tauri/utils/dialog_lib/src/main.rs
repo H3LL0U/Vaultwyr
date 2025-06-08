@@ -1,7 +1,7 @@
-use dialog_lib::show_error;
+use dialog_lib::prebuilt_windows::*;
 
 fn main (){
-    let result = show_error("test_title", "test asdk hdfksjfsfks hfksfhskdadsadaddaaddasdadsaadaddadadaddadaddaadadsafhsksfhadasdkhdfksjfsfkshfksfhskfhsksfhadasdkhdfksjfsfkshfksfhskdadsadaddaaddasdadsaadaddadadaddadaddaadadsafhsksfhadasdkhdfksjfsfkshfksfhskfhsksfhad");
+    let result = ask_skip_retry("test_title", "test asdk hdfksjfsfks hfksfhskdadsadaddaaddasdadsaadaddadadaddadaddaadadsafhsksfhadasdkhdfksjfsfkshfksfhskfhsksfhadasdkhdfksjfsfkshfksfhskdadsadaddaaddasdadsaadaddadadaddadaddaadadsafhsksfhadasdkhdfksjfsfkshfksfhskfhsksfhad");
     println!("{:?}", result)
 
 }

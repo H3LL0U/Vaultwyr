@@ -13,8 +13,8 @@ fn encrypt_path_with_password_api(handle: AppHandle, path: &str, password: &str)
     let path_to_encrypt = EncryptionPath::new(path).unwrap();
 
     match path_to_encrypt.encrypt_to_file(password) {
-        Ok(_) => {"File encrypted Successfully".to_string()},
-        Err(_) => {"Error encrypting file".to_string()},
+        None => {"File encrypted Successfully".to_string()},
+        Some(_) => {"Error encrypting file".to_string()},
     }
 
     
