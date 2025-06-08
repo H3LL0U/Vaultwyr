@@ -1,5 +1,7 @@
 use dialog_lib::show_error;
 
 fn main (){
-    let _ = show_error();
+    let result = show_error("test_title", "test asdk hdfksjfsfks hfksfhskdadsadaddaaddasdadsaadaddadadaddadaddaadadsafhsksfhadasdkhdfksjfsfkshfksfhskfhsksfhadasdkhdfksjfsfkshfksfhskdadsadaddaaddasdadsaadaddadadaddadaddaadadsafhsksfhadasdkhdfksjfsfkshfksfhskfhsksfhad");
+    println!("{:?}", result)
+
 }

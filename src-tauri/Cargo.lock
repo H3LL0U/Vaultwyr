@@ -1210,6 +1210,7 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "egui",
+ "egui_alignments",
  "native-dialog",
  "strum 0.27.1",
  "strum_macros 0.27.1",
@@ -1470,6 +1471,15 @@ dependencies = [
  "web-time",
  "webbrowser",
  "winit",
+]
+
+[[package]]
+name = "egui_alignments"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf881b608a1a6050fa4f283834592bd814667de900acb4612a03b0da22f529b5"
+dependencies = [
+ "egui",
 ]
 
 [[package]]
