@@ -368,15 +368,18 @@ impl VaultWyrFileParser{
 
 
         
+        let validation =  args.pop().expect("could not get the validation string from the main header");
+        let algo =  parser_utils::vec_to_string(args.pop().expect("could not get the algo from the main header")).expect("could not convert the algorythm type to string");
+        let new_path = self.path;
+            
+            
+        let files = self.linker;
+
+
         //goes in reverse order since args are stored like this : new_path , algo, validation <(sequential pop starts from here)
-        VaultwyrFile { 
-            validation: args.pop().expect("could not get the validation string from the main header"),
-            algo: parser_utils::vec_to_string(args.pop().expect("could not get the algo from the main header")).expect("could not convert the algorythm type to string"),
-            new_path: self.path,
-            
-            
-            files: self.linker,
-        }
+        VaultwyrFile::new(new_path, algo, validation, files)
+
+
     }
 }
 

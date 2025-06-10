@@ -1,4 +1,4 @@
-use file_utils::{crypto_files::crypto_files::*, parser::VaultWyrFileParser};
+use file_utils::{behaviour::VaultwyrError, crypto_files::crypto_files::*, parser::VaultWyrFileParser};
 use std::{path::{Path, PathBuf}, str::FromStr};
 use tauri::AppHandle;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -24,7 +24,7 @@ fn encrypt_path_with_password_api(handle: AppHandle, path: &str, password: &str)
 }
 
 #[tauri::command]
-fn decrypt_path_with_password_api(handle: AppHandle, path: &str, password: &str) -> String {
+fn decrypt_path_with_password_api(path: &str, password: &str) -> String {
 
 
 
@@ -32,14 +32,14 @@ fn decrypt_path_with_password_api(handle: AppHandle, path: &str, password: &str)
     let path = PathBuf::from_str(path).unwrap();
 
 
-    let mut encrypted_file = VaultWyrFileParser::from_path(&path).unwrap().to_folder();
+    let encrypted_file = VaultWyrFileParser::from_path(&path).unwrap().to_folder();
 
 
 
 
     match encrypted_file.decrypt_all_files(password) {
-        Ok(_) => {"decrypted file successfully".to_string()},
-        Err(_) => {"Wrong password".to_string()},
+        None=> {"decrypted file successfully".to_string()},
+        Some(_)=> {"Wrong password".to_string()},
     }
 
 

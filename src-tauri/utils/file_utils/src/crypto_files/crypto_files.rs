@@ -89,7 +89,11 @@ pub struct VaultwyrFile{
 	pub algo : String,
 	pub validation: Vec<u8>,
 
-	pub files: VaultwyrFileLinker
+	pub files: VaultwyrFileLinker,
+
+    on_error_behaviour: OnErrorBehaviour
+
+
 }
 
 
@@ -99,7 +103,11 @@ impl VaultwyrFile{
 
 
     pub fn new(new_path: PathBuf,algo: String,validation:Vec<u8>,files: VaultwyrFileLinker) -> Self{
-        VaultwyrFile { new_path, algo , validation, files}
+        VaultwyrFile { new_path, algo ,
+             validation,
+            files,
+            on_error_behaviour: OnErrorBehaviour::AskUser //ask user by default
+        }
     }
 
     pub fn validate_key(&self,key: &[u8; 32]) -> bool{
@@ -114,27 +122,117 @@ impl VaultwyrFile{
     self.validate_key(&key)
     }
 
-pub fn decrypt_all_files(&mut self, password: &str) -> io::Result<()> {
+    pub fn on_error_behaviour(mut self, behaviour: OnErrorBehaviour) -> Self{
+        self.on_error_behaviour = behaviour;
+        self
+    }
+
+pub fn decrypt_all_files(mut self, password: &str) -> Option<VaultwyrError>   {
 
     match self.validate_password(password) {
         true => {},
-        false => return Err(io::Error::new(io::ErrorKind::Other, "The password is incorrect"))
+        false => {
+            match self.on_error_behaviour {
+                OnErrorBehaviour::AskUser => {close_popup("Invalid password", "The password you provided is either incorrect or invalid");
+                return Some(VaultwyrError::BadPassword);
+            },
+            OnErrorBehaviour::TerminateOnError => return Some(VaultwyrError::BadPassword)
+
+                
+            }
+            
     }
-    
-    for file in &mut self.files {
+}
+
+
+    //parsing the vaultwyr file
+
+
+
+    'file_loop :for file in &mut self.files {
         
-        let vaultwyr_folder_file_reader = BufReader::new(OpenOptions::new().read(true).open(&self.new_path)?);
-        
+
+
+    let vaultwyr_folder_file_reader: BufReader<File>;
+
+    loop {
+        vaultwyr_folder_file_reader = BufReader::new(match OpenOptions::new().read(true).open(&self.new_path) {
+            Ok(f) => {f},
+            Err(_) => {
+                match self.on_error_behaviour {
+                    OnErrorBehaviour::AskUser => {match ask_terminate_retry("Unable to open the vaultwyr file", "The file you selected could not be opened. Make sure that it is not used by any other program") {
+                        Some(UserResponseTerminateRetry::Retry) => {continue;},
+                        None| Some(UserResponseTerminateRetry::Terminate) => {return Some(VaultwyrError::FileReadError);},
+                    }},
+                    OnErrorBehaviour::TerminateOnError =>{ return Some(VaultwyrError::FileReadError);}
+                }
+            },
+        });
+        break;
+    }
+
+
         let mut header = match file.parse_file_header(vaultwyr_folder_file_reader) {
             Some(h) => h,
             None => panic!("Unexpected main header"),
         };
+        loop {
+            
         
-        header.try_restore_with_password(password)?;
+        match header.try_restore_with_password(password) {
+            Ok(_) => {break;},
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists=> {
+
+                match self.on_error_behaviour {
+                    OnErrorBehaviour::AskUser => {match ask_skip_retry("The path already exists", format!("An error occurred when decrypting a file into the following location:\n{:?}\nThis location already contains a file.\nWhat should be done?", &header.original_path)) {
+                    Some(UserResponseSkipRetry::Skip) => { continue 'file_loop;},
+                    Some(UserResponseSkipRetry::Retry)|None => {continue;}}
+                    },
+                    OnErrorBehaviour::TerminateOnError => return Some(VaultwyrError::DecryptionError)
+
+
+                    
+                }
+                
+            },
+            Err(e) => {
+                match self.on_error_behaviour {
+                    OnErrorBehaviour::AskUser => {match ask_skip_retry("Unknown error", format!("An error occurred when decrypting a file into the following location:\n{:?}\nWhat should be done?", &header.original_path)) {
+                    Some(UserResponseSkipRetry::Skip) => { continue 'file_loop;},
+                    Some(UserResponseSkipRetry::Retry)|None => {continue;}}
+                    },
+                    OnErrorBehaviour::TerminateOnError => return Some(VaultwyrError::DecryptionError)
+
+
+                    
+                }
+            }
+        };
+        
+        }
         
     }
-    remove_file(&self.new_path)?;
-    Ok(())
+    loop {
+        
+    
+    match remove_file(&self.new_path) {
+        Ok(_) => {break;},
+        Err(_) => {
+            match self.on_error_behaviour {
+                OnErrorBehaviour::AskUser => {
+                    match ask_terminate_retry("Error deleting file", "Could not delete the vaultwyr file") {
+                        Some(UserResponseTerminateRetry::Retry) => {continue;},
+                        Some(UserResponseTerminateRetry::Terminate)|None => {return Some(VaultwyrError::FileDeletionError);},
+                    }
+                },
+                OnErrorBehaviour::TerminateOnError => {
+                    return Some(VaultwyrError::FileDeletionError);
+                }
+            }
+        },
+    };
+}
+    None
 }
 
 }

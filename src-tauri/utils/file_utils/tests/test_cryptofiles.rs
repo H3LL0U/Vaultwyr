@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests{
     
+    use core::panic;
     use std::{fs::File, io::{ Read}, path::PathBuf, str::FromStr};
     use encryption_utils::{aes_decrypt_with_key, password_to_key};
     use file_utils::{behaviour::{self, OnErrorBehaviour}, parser::*};
@@ -106,7 +107,10 @@ fn create_temp_dir() -> PathBuf {
 
         let mut folder = VaultWyrFileParser::from_path(&path).unwrap().to_folder();
 
-        folder.decrypt_all_files("password").unwrap();
+        match folder.decrypt_all_files("password") {
+            Some(e) => {panic!("{:?}", e)},
+            None => {},
+        };
 
         clean_up_test_dir(&path);
     }
@@ -136,7 +140,10 @@ fn create_temp_dir() -> PathBuf {
         let encrypted_file = VaultWyrFileParser::from_path(&new_path).unwrap();
 
         let mut folder = encrypted_file.to_folder();
-        folder.decrypt_all_files("123").unwrap();
+        match folder.decrypt_all_files("123") {
+            Some(e) => {panic!("{:?}",e)},
+            None => {},
+        };
         clean_up_test_dir(&temp_dir);
         }
         ()

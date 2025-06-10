@@ -1,15 +1,27 @@
 
 
 use eframe::egui;
-use egui::{Button, Color32, Vec2, Widget};
+use egui::{Button, Color32, Vec2, Widget, IconData};
 use strum_macros::EnumIter;
 use strum::IntoEnumIterator;
 use std::cell::RefCell;
 use std::fmt::Debug;
+use std::path::Path;
 use std::rc::Rc;
 use egui_alignments::Alignable;
 
 
+
+
+
+fn load_icon<P: AsRef<Path>>(path: P) -> Result<IconData, String> {
+    let image = image::open(path).map_err(|e| format!("Failed to open icon: {}", e))?;
+    let image = image.into_rgba8();
+    let (width, height) = image.dimensions();
+    let rgba = image.into_raw();
+
+    Ok(IconData { rgba, width, height })
+}
 fn is_mostly_white(color: &Color32) -> bool {
     let r = color.r() as f32;
     let g = color.g() as f32;
@@ -50,6 +62,7 @@ where
     T: 'static + IntoEnumIterator + Copy + Debug,
 {
     pub fn default() -> Self {
+        let icon = load_icon("icons/icon.ico").unwrap_or_default(); //uses vaultwyr icon as default
         let default_title = "Title".to_string();
         let default_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_resizable(false)
@@ -60,7 +73,8 @@ where
         .with_minimize_button(false)
         .with_taskbar(false)
         .with_title(&default_title)
-        .with_close_button(false),
+        .with_close_button(false)
+        .with_icon(icon),
         
         ..Default::default()
     };
@@ -90,6 +104,7 @@ where
     }
     pub fn title(mut self,title: impl ToString) -> Self{
         self.title = title.to_string();
+        self.options.viewport.title = Some(title.to_string());
         self
     }
 

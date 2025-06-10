@@ -16,7 +16,9 @@ pub enum VaultwyrError{
     FileOpenError,
     PathSizeError,
     NotImplemented,
-    EncryptionError
+    EncryptionError,
+    DecryptionError,
+    FileDeletionError
 }
 
 impl VaultwyrError{
