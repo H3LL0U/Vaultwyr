@@ -22,7 +22,7 @@ async function decryptWithPassword(password: string, file_path: string) {
     }
 }
 
-async function path_exists(path:string) {
+async function pathExists(path:string) {
       try {
       const result = await invoke("path_exists", {path})
       return result;
@@ -32,11 +32,22 @@ async function path_exists(path:string) {
     }
 }
 
+async function getAppArgs(): Promise<string[]> {
+  try {
+    const result = await invoke<string[]>("get_app_args");
+    return result;
+  } catch (err) {
+    console.error("Invoke error:", err);
+    throw err;
+  }
+}
+
 
 
 export default {
   encryptWithPassword,
   decryptWithPassword,
-  path_exists
+  pathExists,
+  getAppArgs
 };
 

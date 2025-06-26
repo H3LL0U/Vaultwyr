@@ -30,4 +30,5 @@ serde_json = "1"
 
 file_utils = {path = "utils/file_utils"}  
 encryption_utils = {path = "utils/encryption_utils"}    
+dialog_lib = { path = "utils/dialog_lib"}
 tauri-plugin-dialog = "2"

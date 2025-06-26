@@ -6380,6 +6380,7 @@ dependencies = [
 name = "vaultwyr"
 version = "0.1.0"
 dependencies = [
+ "dialog_lib",
  "encryption_utils",
  "file_utils",
  "serde",

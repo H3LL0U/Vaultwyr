@@ -3,7 +3,8 @@ import { useState } from "react";
 import PasswordSubmit from "./compontens/PasswordSubmit/PasswordSubmit";
 import PathSelect from "./compontens/PathSelect/PathSelect";
 import Popup from "reactjs-popup";
-
+import { useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
 
 import API from "./API";
 
@@ -16,7 +17,7 @@ function App() {
 
   const vaultwyr_extensions = ["vaultwyr", "fvaultwyr"]
 
-  const [filename, setFileName] = useState("") //getting the filename/path selected by the user 
+  let [filename, setFileName] = useState("") //getting the filename/path selected by the user 
 
   const [openConfirmPopup, setOpenConfirmPopup] = useState(false); //getting the popup state
   
@@ -28,7 +29,7 @@ function App() {
 
   const [_response, setResponse] = useState("") //response message after encrypting/decrypting
 
-  const [mode, setMode] = useState(0) //getting the mode (0:encryption, 1: decryption)
+  let [mode, setMode] = useState(0) //getting the mode (0:encryption, 1: decryption)
   const messages = {
     popup_choose_password:
       "Choose the password that you want to use to encrypt your file(s)?",
@@ -36,10 +37,24 @@ function App() {
     popup_confirm_decrypt: "Are you sure you want to DECRYPT the file(s)?"
   };
 
+
+function selectPath(path: string) {
+  alert("setup_complete");
+
+  const is_vaultwyr_file = vaultwyr_extensions.some(ext => path.endsWith(ext)) ? 1 : 0;
+
+  setMode(is_vaultwyr_file);
+  mode = is_vaultwyr_file //change it immediately so that its value can be used in the next function (otherwise it is not going to update in time)
+  setFileName(path);
+  filename = path; //change it immediately so that its value can be used in the next function (otherwise it is not going to update in time)
+  showConfirmPopUp();
+}
+
+
   async function showConfirmPopUp() {
     //validate the selected path
-    if (!await API.path_exists(filename)){
-      alert("The path does not exist")
+    if (!await API.pathExists(filename)){
+      alert("The path does not exist" + filename)
       return
     }
 
@@ -55,7 +70,7 @@ function App() {
     }
 
     if (filename){
-      setOpenConfirmPopup(true);
+      await setOpenConfirmPopup(true);
     }
     
   }
@@ -64,8 +79,8 @@ function App() {
     setSelectedPassword(selected_password.trim())
     return (selected_password.length <32 && selected_password && ((mode===0 && repeat_password== selected_password) || mode !== 0))
   }
-
-  async function confirmFileEncryption() {
+  
+  async function confirmFileEncryption() { //AND DECRYPTION
     // Validate the password
     if (!validatePassword()) {
       const errorMessage = "Invalid password";
@@ -107,6 +122,17 @@ function App() {
       
     }
   }
+
+  async function setup() {
+    let args =  await API.getAppArgs()
+    if (args.length >2){
+      await selectPath(args[1])
+    }
+  }
+
+  useEffect(() => {
+    setup();
+  }, []); 
   return (
     
     <main className="container">

@@ -1,6 +1,8 @@
 use file_utils::{behaviour::VaultwyrError, crypto_files::crypto_files::*, parser::VaultWyrFileParser};
 use std::{path::{Path, PathBuf}, str::FromStr};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
+use std::env;
+use dialog_lib;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -51,6 +53,11 @@ fn path_exists(path:String) -> bool{
     path.exists()
 }
 
+#[tauri::command]
+fn get_app_args() -> Vec<String>{
+    env::args().collect()
+}
+
 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -62,7 +69,8 @@ pub fn run() {
             greet,
             encrypt_path_with_password_api,
             decrypt_path_with_password_api,
-            path_exists
+            path_exists,
+            get_app_args
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
