@@ -4,7 +4,6 @@ import PasswordSubmit from "./compontens/PasswordSubmit/PasswordSubmit";
 import PathSelect from "./compontens/PathSelect/PathSelect";
 import Popup from "reactjs-popup";
 import { useEffect } from "react";
-import { listen } from "@tauri-apps/api/event";
 
 import API from "./API";
 
@@ -39,7 +38,6 @@ function App() {
 
 
 function selectPath(path: string) {
-  alert("setup_complete");
 
   const is_vaultwyr_file = vaultwyr_extensions.some(ext => path.endsWith(ext)) ? 1 : 0;
 

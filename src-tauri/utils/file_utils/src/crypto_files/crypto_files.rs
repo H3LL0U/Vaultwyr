@@ -258,7 +258,10 @@ pub struct EncryptionPath {
 }
 
 impl EncryptionPath {
-
+    pub fn max_size(mut self, max_size:usize) -> Self{
+        self.max_size = max_size;
+        self
+    }
     pub fn on_error_behaviour(mut self,behaviour:OnErrorBehaviour) -> Self{
         self.on_error_behaviour = behaviour;
         self

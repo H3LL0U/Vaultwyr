@@ -41,6 +41,36 @@ async function getAppArgs(): Promise<string[]> {
     throw err;
   }
 }
+//all of the settings parameters should be stored here!
+
+export interface AppSettings {
+  MaxDeletionSize: number;
+}
+
+async function applySettings(new_settings: AppSettings): Promise<string> {
+  try {
+    new_settings.MaxDeletionSize = new_settings.MaxDeletionSize*1_073_741_824 //convert to bytes
+    const result = await invoke("apply_settings", { settings: new_settings });
+    return result as string
+  } catch (err) {
+    alert("Error applying settings" + err)
+    console.error("Invoke error:", err);
+    throw err;
+  }
+}
+
+async function getSettings(): Promise<AppSettings> {
+  try {
+    const result = await invoke("get_settings") as AppSettings;
+    result.MaxDeletionSize = Math.floor(result.MaxDeletionSize/ 1_073_741_824) //convert to gigabytes
+    return result
+  } catch (err) {
+    alert(err)
+    console.error("Invoke error:", err);
+    throw err;
+  }
+}
+
 
 
 
@@ -48,6 +78,8 @@ export default {
   encryptWithPassword,
   decryptWithPassword,
   pathExists,
-  getAppArgs
+  getAppArgs,
+  applySettings,
+  getSettings,
 };
 
