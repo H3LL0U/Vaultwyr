@@ -26,6 +26,11 @@ This project is still in early development, so be patient for more features!
 
 ## The project is in very early development
 
-## Showcase
+## Showcases
 
-![Image](https://github.com/user-attachments/assets/41f621b0-4e04-480b-85bb-c45f1f8b29a0)
+### Encryption
+![Image](https://github.com/user-attachments/assets/bb305f99-2229-4e35-bc3e-072a82e4c36f)
+
+### Decryption
+![Image](https://github.com/user-attachments/assets/0d6ee08a-114d-4226-bb0d-9e2a36570a32)
+
