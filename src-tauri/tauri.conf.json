@@ -1,13 +1,14 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "vaultwyr",
-  "version": "0.3.1",
+  "version": "0.3.11",
   "identifier": "com.vaultwyr.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
+    
   },
   "app": {
     "windows": [
