@@ -3,7 +3,8 @@ use tauri::App;
 use std::fs::File;
 use std::io::{self, BufReader, Write};
 use std::path::PathBuf;
-
+use directories::ProjectDirs;
+use std::fs;
 #[derive(Serialize, Deserialize)]
 pub struct AppSettings {
     pub MaxDeletionSize: usize,
@@ -12,16 +13,24 @@ pub struct AppSettings {
 impl AppSettings{
     pub fn default() -> Self{
         Self{
-            MaxDeletionSize: 53_687_091_200 //5GB
+            MaxDeletionSize: 53_687_091_200 //50GB
         }
     }
 }
 
-fn get_settings_location() -> io::Result<PathBuf> {
-    let exe_path = std::env::current_exe()?;
-    match exe_path.parent() {
-        Some(dir) => Ok(dir.join("settings.svaultwyr")),
-        None => Err(io::Error::new(io::ErrorKind::Other, "Could not determine executable directory")),
+fn get_settings_location() -> Option<PathBuf> {
+    if let Some(proj_dirs) = ProjectDirs::from("com", "H3LL_0U", "Vaultwyr") {
+        let config_dir = proj_dirs.config_dir();
+
+        // Ensure the config directory exists
+        if let Err(e) = fs::create_dir_all(config_dir) {
+            eprintln!("Failed to create config directory: {}", e);
+            return None;
+        }
+        
+        Some(config_dir.join("settings.svaultwyr"))
+    } else {
+        None
     }
 }
 
@@ -30,7 +39,10 @@ fn get_settings_location() -> io::Result<PathBuf> {
 
 pub fn update_settings(settings: &AppSettings) -> io::Result<()> {
 
-    let settings_location = get_settings_location()?;
+    let settings_location = match get_settings_location() {
+        Some(k) => {k},
+        None => {return Err(io::Error::new(io::ErrorKind::NotADirectory, "Could not locate the settings location"));},
+    };
     let mut file = File::create(settings_location)?;
     let json = serde_json::to_string_pretty(settings)
         .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
@@ -39,7 +51,10 @@ pub fn update_settings(settings: &AppSettings) -> io::Result<()> {
 }
 
 pub fn get_settings() -> io::Result<AppSettings> {
-    let settings_location = get_settings_location()?;
+    let settings_location = match get_settings_location() {
+        Some(k) => {k},
+        None => {return Err(io::Error::new(io::ErrorKind::NotADirectory, "Could not locate the settings location"));},
+    };
     
     let file = match File::open(&settings_location) {
         Ok(k) => {k},

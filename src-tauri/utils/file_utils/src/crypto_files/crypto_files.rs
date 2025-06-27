@@ -5,12 +5,10 @@
 
 use core::panic;
 
-use std::fs;
 
 use std::io::{self, BufReader, Read, Write};
 use std::fs::{remove_file, File, OpenOptions};
 use std::path:: PathBuf;
-use alkahest::Skip;
 use dialog_lib::responses::{UserResponseSkipRetry, UserResponseTerminateRetry};
 use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32, validate_key32};
 use crate::file_traversal::calculate_file_hash;
@@ -18,7 +16,7 @@ use crate::crypto_files::parser::*;
 use crate::file_traversal::RecursiveDirIter;
 use crate::file_traversal::calculate_dir_size;
 use crate::behaviour::{self, OnErrorBehaviour, VaultwyrError};
-use tauri::{App, AppHandle};
+
 
 
 use dialog_lib::responses::*;
@@ -195,7 +193,7 @@ pub fn decrypt_all_files(mut self, password: &str) -> Option<VaultwyrError>   {
                 }
                 
             },
-            Err(e) => {
+            Err(_) => {
                 match self.on_error_behaviour {
                     OnErrorBehaviour::AskUser => {match ask_skip_retry("Unknown error", format!("An error occurred when decrypting a file into the following location:\n{:?}\nWhat should be done?", &header.original_path)) {
                     Some(UserResponseSkipRetry::Skip) => { continue 'file_loop;},
@@ -555,7 +553,7 @@ impl EncryptionPath {
         };
 
         if path_size > self.max_size as u64{
-            return Some(VaultwyrError::handle_generic_error(&self.on_error_behaviour, "The path is too large", format!("The path that you provided for deletion is too large!\n{}>{}If you want to be able to encrypt larger files please update the settings", path_size, &self.max_size).as_str(), VaultwyrError::PathSizeError))
+            return Some(VaultwyrError::handle_generic_error(&self.on_error_behaviour, "The path is too large", format!("The path that you provided for deletion is too large!\n({} bytes > {} bytes)\nIf you want to be able to delete larger files after they have been encrypted please update the settings", path_size, &self.max_size).as_str(), VaultwyrError::PathSizeError))
         }
         
         for path in self.paths{
