@@ -47,12 +47,16 @@ async function getAppArgs(): Promise<string[]> {
 
 export interface AppSettings {
   MaxDeletionSize: number;
+  RestoreToOriginalFolder: boolean;
 }
 
-async function applySettings(new_settings: AppSettings): Promise<string> {
+async function applySettings(settings: AppSettings): Promise<string> {
   try {
-    new_settings.MaxDeletionSize = new_settings.MaxDeletionSize*1_073_741_824 //convert to bytes
+    let new_settings: AppSettings = { ...settings }; //taking a copy of the 
+    new_settings.MaxDeletionSize = Math.floor(new_settings.MaxDeletionSize*1_073_741_824) //convert to bytes
+    
     const result = await invoke("apply_settings", { settings: new_settings });
+    alert("Settings successfully applied!")
     return result as string
   } catch (err) {
     alert("Error applying settings" + err)

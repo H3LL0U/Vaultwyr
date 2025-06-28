@@ -37,9 +37,17 @@ fn encrypt_path_with_password_api(handle: AppHandle, path: &str, password: &str)
 
 #[tauri::command]
 fn decrypt_path_with_password_api(path: &str, password: &str) -> String {
+    let settings = match application_settings::get_settings() {
+        Ok(k) => {k},
+        Err(_) => {return "Error locating your settings file".to_string()},
+    };
+
+
+
 
     let path = PathBuf::from_str(path).unwrap();
-    let encrypted_file = VaultWyrFileParser::from_path(&path).unwrap().to_folder();
+    let encrypted_file = VaultWyrFileParser::from_path(&path).unwrap().to_folder().restore_into_original_folder(settings.RestoreToOriginalFolder);
+    
     match encrypted_file.decrypt_all_files(password) {
         None=> {"decrypted file successfully".to_string()},
         Some(_)=> {"Wrong password".to_string()},

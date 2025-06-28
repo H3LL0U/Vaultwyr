@@ -367,17 +367,18 @@ impl VaultWyrFileParser{
         };
 
 
-        
+        //TODO: replace expects with propper error handling
         let validation =  args.pop().expect("could not get the validation string from the main header");
         let algo =  parser_utils::vec_to_string(args.pop().expect("could not get the algo from the main header")).expect("could not convert the algorythm type to string");
+        let original_path = PathBuf::from_str(parser_utils::vec_to_string(args.pop().expect("could not convert the original path back into string")).expect("could not get the original path").as_str()).expect("not convertable to path");
         let new_path = self.path;
-            
+        
             
         let files = self.linker;
 
 
         //goes in reverse order since args are stored like this : new_path , algo, validation <(sequential pop starts from here)
-        VaultwyrFile::new(new_path, algo, validation, files)
+        VaultwyrFile::new(new_path, algo, validation, files, original_path)
 
 
     }

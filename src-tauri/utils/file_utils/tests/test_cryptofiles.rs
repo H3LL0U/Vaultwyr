@@ -105,7 +105,7 @@ fn create_temp_dir() -> PathBuf {
         
         //let _reader = BufReader::new(File::open(&path).unwrap());
 
-        let mut folder = VaultWyrFileParser::from_path(&path).unwrap().to_folder();
+        let mut folder = VaultWyrFileParser::from_path(&path).unwrap().to_folder().restore_into_original_folder(false);
 
         match folder.decrypt_all_files("password") {
             Some(e) => {panic!("{:?}", e)},

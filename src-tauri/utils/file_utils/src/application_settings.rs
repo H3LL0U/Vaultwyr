@@ -4,16 +4,18 @@ use std::fs::File;
 use std::io::{self, BufReader, Write};
 use std::path::PathBuf;
 use directories::ProjectDirs;
-use std::fs;
+use std::{default, fs};
 #[derive(Serialize, Deserialize)]
 pub struct AppSettings {
     pub MaxDeletionSize: usize,
+    pub RestoreToOriginalFolder: bool
 }
 
 impl AppSettings{
     pub fn default() -> Self{
         Self{
-            MaxDeletionSize: 53_687_091_200 //50GB
+            MaxDeletionSize: 53_687_091_200, //50GB
+            RestoreToOriginalFolder: true
         }
     }
 }
@@ -50,6 +52,7 @@ pub fn update_settings(settings: &AppSettings) -> io::Result<()> {
     Ok(())
 }
 
+//tries to get the settings if it cant find them creates them in their default configuration
 pub fn get_settings() -> io::Result<AppSettings> {
     let settings_location = match get_settings_location() {
         Some(k) => {k},
@@ -58,7 +61,7 @@ pub fn get_settings() -> io::Result<AppSettings> {
     
     let file = match File::open(&settings_location) {
         Ok(k) => {k},
-        Err(_) => {let f = File::create(settings_location)?; //create the settings path if it doesnt exist before returning the default
+        Err(_) => {let _ = File::create(settings_location)?; //create the settings path if it doesnt exist before returning the default
         let default_settings = AppSettings::default();    
         update_settings(&default_settings)?;
         return Ok(default_settings);
@@ -67,7 +70,14 @@ pub fn get_settings() -> io::Result<AppSettings> {
         }, 
     };
     let reader = BufReader::new(file);
-    let settings = serde_json::from_reader(reader)
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+    let settings: AppSettings = match serde_json::from_reader(reader) {
+        Ok(k) => {k},
+        Err(_) => {
+            let default_settings = AppSettings::default();
+            update_settings(&default_settings)?;
+            default_settings
+            
+        },
+    };
     Ok(settings)
 }

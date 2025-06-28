@@ -6,12 +6,13 @@ import ToastGroup from './compontens/Toasts/ToastGroup'
 import SliderWithInput from './compontens/SliderWithInput/SliderWithInput'
 import { AppSettings } from './API'
 import API from './API'
-
+import Switch from './compontens/Switch/Switch'
 
 function Settings() {
     
     const [selected_setting_index, setSelectedIndex] = useState(0) 
     const app_settings_promise = API.getSettings();
+    
     
 
 
@@ -34,26 +35,40 @@ function Settings() {
                     alert("Settings are loading")
                 }
                 else{
+                    
                     new_settings.MaxDeletionSize = value;
                     setAppSettings(new_settings)
                 }
             }} initialValue={appSettings?.MaxDeletionSize}/>
+            <br />
+
 
 
         </>
         ,
-        <></>
+        <>
+          <h3>Restore to original path</h3>
+            <Switch onChange={(value) => {
+              let new_settings = appSettings;
+              if (new_settings== null){
+                alert("Settings are loading")
+              }
+              else{
+                new_settings.RestoreToOriginalFolder = value
+                setAppSettings(new_settings)
+              }
+            }}></Switch>
+        
+        </>
     ]
 
-    function updateSettingsSidebar(index:number){
-        setSelectedIndex(index)
-    }
+
 
     function apply(){
     if (appSettings) {
 
       API.applySettings(appSettings);
-      alert("Settings successfully applied!")
+      
     } else {
       alert("Settings have not been loaded yet.");
     }
@@ -63,14 +78,23 @@ function Settings() {
     <SettingsMenu>
       <div style={{ display: "flex", width: "100vw", height: "100vh" }}>
         <SideBar style={{ width: "33.33vw" }}>
-          <ToastGroup onSet={updateSettingsSidebar}>
-            <ToastButton >General Settings</ToastButton>
-            <ToastButton >Extra Settings</ToastButton>
+          <ToastGroup onSet={setSelectedIndex}>
+            <ToastButton >Encryption Settings</ToastButton>
+            <ToastButton >Decryption Settings</ToastButton>
           </ToastGroup>
         </SideBar>
 
         <SideBar style={{ width: "66.66vw", backgroundColor:"#d6d4d4"}}>
-            {possible_settings_tabs[selected_setting_index]}
+            {possible_settings_tabs.map((tab, index) => (
+              <div
+                key={index}
+                style={{ display: index === selected_setting_index ? "block" : "none" }}
+              >
+                {tab}
+              </div>
+            ))
+            //only display the selected tab
+            } 
             <button style={{ position: "absolute", bottom: "10px", right: "10px", width: "20%", backgroundColor:"#ebfff4"}} onClick={apply} >Apply</button>
         </SideBar>
       </div>

@@ -8,7 +8,7 @@ use core::panic;
 
 use std::io::{self, BufReader, Read, Write};
 use std::fs::{remove_file, File, OpenOptions};
-use std::path:: PathBuf;
+use std::path::{Path,  PathBuf};
 use dialog_lib::responses::{UserResponseSkipRetry, UserResponseTerminateRetry};
 use encryption_utils::{aes_decrypt_with_key, aes_encrypt_with_key, password_to_key32, validate_key32};
 use crate::file_traversal::calculate_file_hash;
@@ -39,6 +39,11 @@ impl FolderFile{
     }
 
 
+
+pub fn original_path(mut self, new_path:PathBuf) -> Self{
+    self.original_path = new_path;
+    self
+}
 
 fn create_original_file(&self) -> io::Result<File> {
     let parent_dir = self.original_path.parent().unwrap();
@@ -77,7 +82,10 @@ fn create_original_file(&self) -> io::Result<File> {
         }
        
 
+
+
     }
+    
 
 
 
@@ -89,9 +97,10 @@ pub struct VaultwyrFile{
 
 	pub files: VaultwyrFileLinker,
 
-    on_error_behaviour: OnErrorBehaviour
+    on_error_behaviour: OnErrorBehaviour,
 
-
+    restore_into_original_folder: bool, //if set to true will restore the files in the same location as the file is in. Otherwise restores to the original location
+    original_path: PathBuf
 }
 
 
@@ -99,12 +108,17 @@ pub struct VaultwyrFile{
 
 impl VaultwyrFile{
 
-
-    pub fn new(new_path: PathBuf,algo: String,validation:Vec<u8>,files: VaultwyrFileLinker) -> Self{
+    pub fn restore_into_original_folder(mut self, state:bool) ->Self{
+        self.restore_into_original_folder = state;
+        self
+    } 
+    pub fn new(new_path: PathBuf,algo: String,validation:Vec<u8>,files: VaultwyrFileLinker, original_path:PathBuf) -> Self{
         VaultwyrFile { new_path, algo ,
              validation,
             files,
-            on_error_behaviour: OnErrorBehaviour::AskUser //ask user by default
+            on_error_behaviour: OnErrorBehaviour::AskUser, //ask user by default
+            restore_into_original_folder: true, //restores into the original path by default
+            original_path: original_path
         }
     }
 
@@ -125,6 +139,12 @@ impl VaultwyrFile{
         self
     }
 
+fn get_new_file_path(original_root: &Path, new_root: &Path, file_path: &Path) -> PathBuf {
+    let original_root = original_root.parent().unwrap_or_else(|| Path::new(""));
+    let new_root = new_root.parent().unwrap_or_else(|| Path::new(""));
+    let relative_path = file_path.strip_prefix(original_root).unwrap_or(file_path);
+    new_root.join(relative_path)
+}
 pub fn decrypt_all_files(mut self, password: &str) -> Option<VaultwyrError>   {
 
     match self.validate_password(password) {
@@ -174,6 +194,18 @@ pub fn decrypt_all_files(mut self, password: &str) -> Option<VaultwyrError>   {
             Some(h) => h,
             None => panic!("Unexpected main header"),
         };
+
+
+        // edit the header's path to a new path if restore to original path is set false (restore in the same location as the vaultwyr file)
+        match self.restore_into_original_folder {
+            true => {},
+            false =>{
+                header.original_path = Self::get_new_file_path(&self.original_path, &self.new_path, &header.original_path);
+                
+            }
+        };
+
+
         loop {
             
         
