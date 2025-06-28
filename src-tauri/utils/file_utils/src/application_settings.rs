@@ -8,14 +8,16 @@ use std::{default, fs};
 #[derive(Serialize, Deserialize)]
 pub struct AppSettings {
     pub MaxDeletionSize: usize,
-    pub RestoreToOriginalFolder: bool
+    pub RestoreToOriginalFolder: bool,
+    pub ChunkSize: usize
 }
 
 impl AppSettings{
     pub fn default() -> Self{
         Self{
             MaxDeletionSize: 53_687_091_200, //50GB
-            RestoreToOriginalFolder: true
+            RestoreToOriginalFolder: true,
+            ChunkSize: 2048
         }
     }
 }

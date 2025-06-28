@@ -48,6 +48,7 @@ async function getAppArgs(): Promise<string[]> {
 export interface AppSettings {
   MaxDeletionSize: number;
   RestoreToOriginalFolder: boolean;
+  ChunkSize: number;
 }
 
 async function applySettings(settings: AppSettings): Promise<string> {
@@ -69,6 +70,7 @@ async function getSettings(): Promise<AppSettings> {
   try {
     const result = await invoke("get_settings") as AppSettings;
     result.MaxDeletionSize = Math.floor(result.MaxDeletionSize/ 1_073_741_824) //convert to gigabytes
+    
     return result
   } catch (err) {
     alert(err)

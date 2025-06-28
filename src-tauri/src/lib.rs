@@ -27,7 +27,8 @@ fn encrypt_path_with_password_api(handle: AppHandle, path: &str, password: &str)
     let path_to_encrypt = match EncryptionPath::new(path,None) {
         Ok(k) => {k},
         Err(_) => { return "Encryption Cancelled".to_string();},
-    }.max_size(settings.MaxDeletionSize);
+    }.max_size(settings.MaxDeletionSize) // set the maximum file deletion size from settings
+    .chunk_size(settings.ChunkSize); // set the chunk size for file encryption from settings
 
     match path_to_encrypt.encrypt_to_file(password) {
         None => {"File encrypted Successfully".to_string()},

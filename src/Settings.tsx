@@ -26,10 +26,10 @@ function Settings() {
     }, []);
 
     const possible_settings_tabs = [
-        //General Settings
+        //Encryption Settings
         <>
             <h3>Maximum file deletion size (GB)</h3>
-            <SliderWithInput display_on_max='unlimited' min={0} max={500} onChange={(value)=>{
+            <SliderWithInput display_on_max='unlimited' min={0} max={500} initialValue={appSettings?.MaxDeletionSize} onChange={(value)=>{
                 let new_settings = appSettings;
                 if (new_settings == null){
                     alert("Settings are loading")
@@ -39,25 +39,46 @@ function Settings() {
                     new_settings.MaxDeletionSize = value;
                     setAppSettings(new_settings)
                 }
-            }} initialValue={appSettings?.MaxDeletionSize}/>
+            }} />
             <br />
 
+            <h3>File chunk size (bytes)</h3> 
+            <h4>
+              Equals to around{" "}
+              {appSettings?.ChunkSize !== undefined
+                ? (appSettings.ChunkSize / (1024 * 1024)).toFixed(2)
+                : "Unknown"}{" "}
+              Megabytes
+            </h4>
+            <SliderWithInput min={256} max={64_000_000} initialValue={appSettings?.ChunkSize} onChange={(value) => {
+              if (appSettings == null) {
+                alert("Settings are loading");
+              } else {
+                setAppSettings({
+                  ...appSettings,
+                  ChunkSize: value,
+                });
+              }
+            }}/>
 
 
         </>
         ,
+        //Decryption Settings
         <>
           <h3>Restore to original path</h3>
             <Switch onChange={(value) => {
-              let new_settings = appSettings;
-              if (new_settings== null){
-                alert("Settings are loading")
+              if (!appSettings) {
+                alert("Settings are loading");
+                return;
               }
-              else{
-                new_settings.RestoreToOriginalFolder = value
-                setAppSettings(new_settings)
-              }
-            }}></Switch>
+              setAppSettings({
+                ...appSettings,
+                RestoreToOriginalFolder: value
+              });
+            }} checked = {appSettings?.RestoreToOriginalFolder}></Switch>
+
+          <br />
         
         </>
     ]

@@ -296,7 +296,10 @@ impl EncryptionPath {
         self.on_error_behaviour = behaviour;
         self
     }
-
+    pub fn chunk_size(mut self, chunk_size:usize) -> Self{
+        self.chunk_size = Some(chunk_size);
+        self
+    }
     fn create_vaultwyr_file(path: &PathBuf) -> io::Result<File> {
         
         OpenOptions::new().create_new(true).write(true).read(true).open(path)

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+
 
 type SwitchProps = {
   checked?: boolean;
@@ -8,7 +8,6 @@ type SwitchProps = {
 };
 
 const Switch: React.FC<SwitchProps> = ({ checked = false, onChange = () => {}, disabled = false, label }) => {
-    const [is_checked,setChecked] = useState(checked);
   return (
     <label className="flex items-center space-x-3 cursor-pointer">
       {label && <span className="text-sm">{label}</span>}
@@ -20,15 +19,13 @@ const Switch: React.FC<SwitchProps> = ({ checked = false, onChange = () => {}, d
         <input
           type="checkbox"
           className="sr-only"
-          checked={is_checked}
-          onChange={(e) => {onChange(e.target.checked)
-            setChecked(e.target.checked);
-          }}
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
           disabled={disabled}
         />
         <span
-          className={`block w-full h-full rounded-full bg-gray-300 transition-colors ${
-            checked ? "bg-blue-500" : ""
+          className={`block w-full h-full rounded-full transition-colors ${
+            checked ? "bg-blue-500" : "bg-gray-300"
           }`}
         />
         <span
