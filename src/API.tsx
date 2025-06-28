@@ -35,8 +35,10 @@ async function pathExists(path:string) {
 async function getAppArgs(): Promise<string[]> {
   try {
     const result = await invoke<string[]>("get_app_args");
+    
     return result;
   } catch (err) {
+    alert(err)
     console.error("Invoke error:", err);
     throw err;
   }

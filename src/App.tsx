@@ -123,8 +123,9 @@ function selectPath(path: string) {
 
   async function setup() {
     let args =  await API.getAppArgs()
-    if (args.length >2){
-      await selectPath(args[1])
+    
+    if (args.length >=2){
+      selectPath(args[1])
     }
   }
 
