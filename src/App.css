@@ -21,6 +21,18 @@
   -webkit-text-size-adjust: 100%;
 }
 
+*{
+  color: #0f0f0f;
+  background-color: #f6f6f6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+
+
 .container {
   align-items: center;
   margin: 0;
@@ -102,6 +114,10 @@ button {
     color: #f6f6f6;
     background-color: #2f2f2f;
   }
+  *{
+    color: #f6f6f6;
+    background-color: #2f2f2f;
+  }
 
   a:hover {
     color: #24c8db;
@@ -112,6 +128,9 @@ button {
     color: #ffffff;
     background-color: #0f0f0f98;
   }
+
+  
+
   button:active {
     background-color: #0f0f0f69;
   }
@@ -140,8 +159,9 @@ button {
   flex-direction: column;
   justify-content: center;
   text-align: center;
-
   
+
+
 }
 .modal > .header {
   width: 100%;
@@ -169,7 +189,6 @@ button {
   right: -10px;
   top: -10px;
   font-size: 24px;
-  background: #ffffff;
   border-radius: 18px;
   border: 1px solid #cfcece;
 }

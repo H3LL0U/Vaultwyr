@@ -98,14 +98,14 @@ function Settings() {
   return <>
     <SettingsMenu>
       <div style={{ display: "flex", width: "100vw", height: "100vh" }}>
-        <SideBar style={{ width: "33.33vw" }}>
+        <SideBar style={{ width: "33.33vw" , backgroundColor:"initial"}}>
           <ToastGroup onSet={setSelectedIndex}>
             <ToastButton >Encryption Settings</ToastButton>
             <ToastButton >Decryption Settings</ToastButton>
           </ToastGroup>
         </SideBar>
 
-        <SideBar style={{ width: "66.66vw", backgroundColor:"#d6d4d4"}}>
+        <SideBar style={{ width: "66.66vw", backgroundColor:"initial"}}>
             {possible_settings_tabs.map((tab, index) => (
               <div
                 key={index}
@@ -116,7 +116,7 @@ function Settings() {
             ))
             //only display the selected tab
             } 
-            <button style={{ position: "absolute", bottom: "10px", right: "10px", width: "20%", backgroundColor:"#ebfff4"}} onClick={apply} >Apply</button>
+            <button style={{ position: "absolute", bottom: "10px", right: "10px", width: "20%", backgroundColor:"#ebfff4", color:"black"}} onClick={apply} >Apply</button>
         </SideBar>
       </div>
     </SettingsMenu>

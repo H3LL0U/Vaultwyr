@@ -1,0 +1,93 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  flex: 1;
+  outline: none;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: #ddd;
+  border-radius: 3px;
+}
+
+.slider::-moz-range-track {
+  height: 6px;
+  background: #ddd;
+  border-radius: 3px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  width: 18px;
+  height: 18px;
+  background: #333;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 2px rgba(0,0,0,0.5);
+  transition: background 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #333;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 2px rgba(0,0,0,0.5);
+  transition: background 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.slider:hover::-webkit-slider-thumb {
+  background: #555;
+}
+
+.slider:hover::-moz-range-thumb {
+  background: #555;
+}
+
+.textInput {
+  width: 4rem;
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+  .slider::-webkit-slider-thumb {
+    background: white;
+    box-shadow: 0 0 3px rgba(255, 255, 255, 0.7);
+  }
+  .slider::-moz-range-thumb {
+    background: white;
+    box-shadow: 0 0 3px rgba(255, 255, 255, 0.7);
+  }
+  .slider:hover::-webkit-slider-thumb {
+    background: #ccc;
+  }
+  .slider:hover::-moz-range-thumb {
+    background: #ccc;
+  }
+  /* Optional: change the track background for better contrast in dark mode */
+  .slider::-webkit-slider-runnable-track {
+    background: #444;
+  }
+  .slider::-moz-range-track {
+    background: #444;
+  }
+}

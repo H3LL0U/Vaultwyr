@@ -145,6 +145,7 @@ function selectPath(path: string) {
 
       {/* Controlled Popup using render function */}
       <Popup
+        contentStyle={{backgroundColor:"initial", border:"none"}}
         open={openConfirmPopup}
         modal
         onClose={() => setOpenConfirmPopup(false)}
